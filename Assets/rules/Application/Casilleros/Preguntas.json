@@ -1,63 +1,13 @@
 {
   "preguntas": [
     {
-      "texto": "¿Cuál no es un motor de Videojuegos?",
+      "texto": "¿Cuál no es un motor de videojuegos?",
       "opciones": ["Godot", "Unity", "Pupo3d", "Unreal"],
       "indiceCorrecta": 2
     },
     {
-      "texto": "¿En que año salio la consola Nintendo Switch 2?",
-      "opciones": ["2020", "2022", "2025", "2024"],
-      "indiceCorrecta": 2
-    },
-    {
-      "texto": "¿Donde queda la UNAHUR?",
-      "opciones": ["Hurlingham", "Moron", "Peru", "Berlín"],
-      "indiceCorrecta": 0
-    },
-    {
-      "texto": "¿Como se llama el personaje que te vende los mapas en Hollow Knight?",
-      "opciones": ["Gaston", "Cuerno", "Coliflor", "Cornifer"],
-      "indiceCorrecta": 3
-    },
-    {
-      "texto": "¿Cuando salio Super Mario Bros?",
-      "opciones": ["1999", "1985", "2030", "2026"],
-      "indiceCorrecta": 1
-    },
-    {
-      "texto": "¿Cuál de estos personajes pertenece a Nintendo?",
-      "opciones": ["Kratos", "Sonic", "Kirby", "Crash"],
-      "indiceCorrecta": 2
-    },
-    {
-      "texto": "¿En qué año salio GTA 2?",
-      "opciones": ["1999", "2013", "2002", "1930"],
-      "indiceCorrecta": 0
-    },
-    {
-      "texto": "¿Cómo se llama el protagonista de The Legend of Zelda?",
-      "opciones": ["Zelda", "Link", "Mario", "Kirby"],
-      "indiceCorrecta": 1
-    },
-    {
-      "texto": "¿Cómo se llama el hermano de Mario?",
-      "opciones": ["Wario", "Luigi", "Toad", "Bowser"],
-      "indiceCorrecta": 1
-    },
-    {
-      "texto": "¿Cuál de estos juegos pertenece a la saga Pokémon?",
-      "opciones": ["Pokémon Rojo", "Halo Rojo", "Mario Rojo", "Sonic Rojo"],
-      "indiceCorrecta": 0
-    },
-    {
-      "texto": "¿Cuál de estos juegos fue desarrollado por Valve?",
-      "opciones": ["Portal", "God of War", "Bloodborne", "Celeste"],
-      "indiceCorrecta": 0
-    },
-    {
-      "texto": "¿Cuál de estos juegos pertenece a FromSoftware?",
-      "opciones": ["Dark Souls", "Portal", "Cuphead", "Terraria"],
+      "texto": "¿Dónde queda la UNAHUR?",
+      "opciones": ["Hurlingham", "Morón", "Haedo", "Ituzaingó"],
       "indiceCorrecta": 0
     },
     {
@@ -71,77 +21,129 @@
       "indiceCorrecta": 0
     },
     {
-    "texto": "¿Quién creó en 1931 el 'Baffle Ball'?",
-    "opciones": ["David Gottlieb", "Ralph Baer", "Nolan Bushnell", "Harry Mabs"],
-    "indiceCorrecta": 0
-  },
-{
-    "texto": "¿En qué universidad estudiaban los creadores del juego SpaceWar!",
-    "opciones": ["Harvard", "Stanford", "MIT", "Princeton"],
-    "indiceCorrecta": 2
-  },
-{
-    "texto": "¿Cómo se llamó la famosa empresa fundada por Nolan Bushnell y Ted Dabney?",
-    "opciones": ["Nintendo", "Atari", "Sega", "Bally"],
-    "indiceCorrecta": 1
-  },
-{
-    "texto": "¿Cuál fue el exitoso juego de arcade sobre tenis de mesa creado por Atari en 1972?",
-    "opciones": ["Pong", "SpaceWar!", "Computer Space", "Tetris"],
-    "indiceCorrecta": 0
-  },
-{
-    "texto": "¿Qué inventó Harry Mabs que salvó a la industria del pinball?",
-    "opciones": ["El tilt", "Los flippers", "El monedero", "Las luces LED"],
-    "indiceCorrecta": 1
-  },
-{
-    "texto": "¿Cómo se llamaba la primera computadora científica que funcionó en Argentina?",
-    "opciones": ["Clementina", "Matilda", "Eniac", "Clemendin"],
-    "indiceCorrecta": 0
-  },
-{
-    "texto": "¿Cómo ideó Toru Iwatani la forma de Pac-Man?",
-    "opciones": [ "Mirando un fantasma", "Comiendo una hamburguesa", "Viendo un reloj circular", "Viendo una pizza"],
-    "indiceCorrecta": 3
-  },
-{
-    "texto": "¿Qué criatura explota en Minecraft?",
-    "opciones": ["Zombie", "Creeper", "Esqueleto", "Enderman"],
-    "indiceCorrecta": 1
-  },
-{
-    "texto": "¿De qué color es Sonic?",
-    "opciones": ["Rojo", "Verde", "Amarillo", "Azul"],
-    "indiceCorrecta": 3
-  },
-{
-    "texto": "¿Qué come Pac-Man en el laberinto?",
-    "opciones": ["Monedas", "Estrellas", "Puntos", "Hongos"],
-    "indiceCorrecta": 2
-  },
-{
-    "texto": "¿Cómo se llaman los personajes jugables en League of Legends?",
-    "opciones": ["Campeones", "Héroes", "Leyendas", "Guerreros"],
-    "indiceCorrecta": 0
-  },
-{
-    "texto": "¿Cómo se llama la moneda virtual de Roblox?",
-    "opciones": ["V-Bucks", "Monedas", "Gemas","Robux"],
-    "indiceCorrecta": 3
-  },
-{
-    "texto": "¿Qué tipo de juego es Valorant?",
-    "opciones": ["Battle Royale", "Deportes","Shooter táctico",  "Estrategia"],
-    "indiceCorrecta": 2
-  },
-{
-    "texto": "¿En qué ciudad ficticia se desarrolla GTA V?",
-    "opciones": ["Liberty City", "Vice City", "Los Santos", "San Fierro"],
-    "indiceCorrecta": 2
-  }
-
-
-
+      "texto": "¿Quién creó en 1931 el Baffle Ball?",
+      "opciones": ["David Gottlieb", "Ralph Baer", "Nolan Bushnell", "Harry Mabs"],
+      "indiceCorrecta": 0
+    },
+    {
+      "texto": "¿En qué universidad estudiaban los creadores del juego SpaceWar!?",
+      "opciones": ["Harvard", "Stanford", "MIT", "Princeton"],
+      "indiceCorrecta": 2
+    },
+    {
+      "texto": "¿Cómo se llamó la famosa empresa fundada por Nolan Bushnell y Ted Dabney?",
+      "opciones": ["Nintendo", "Atari", "Sega", "Bally"],
+      "indiceCorrecta": 1
+    },
+    {
+      "texto": "¿Qué inventó Harry Mabs que salvó a la industria del pinball?",
+      "opciones": ["El tilt", "Los flippers", "El monedero", "Las luces LED"],
+      "indiceCorrecta": 1
+    },
+    {
+      "texto": "¿Cómo se llamaba la primera computadora científica que funcionó en Argentina?",
+      "opciones": ["Clementina", "Matilda", "Eniac", "Clemendin"],
+      "indiceCorrecta": 0
+    },
+    {
+      "texto": "¿Qué es un motor de videojuegos?",
+      "opciones": [
+        "Un programa que permite crear videojuegos",
+        "Una consola para jugar",
+        "Un tipo de joystick",
+        "Un lenguaje de programación"
+      ],
+      "indiceCorrecta": 0
+    },
+    {
+      "texto": "¿Qué significa la sigla FPS en el desarrollo de videojuegos?",
+      "opciones": [
+        "Fast Player System",
+        "Frames Per Second",
+        "First Program Software",
+        "Full Power Screen"
+      ],
+      "indiceCorrecta": 1
+    },
+    {
+      "texto": "¿Para qué sirve un Game Designer?",
+      "opciones": [
+        "Diseñar las reglas y mecánicas del juego",
+        "Reparar computadoras",
+        "Vender videojuegos",
+        "Fabricar consolas"
+      ],
+      "indiceCorrecta": 0
+    },
+    {
+      "texto": "¿Qué es un bug en programación?",
+      "opciones": [
+        "Un personaje del juego",
+        "Un error en el programa",
+        "Un tipo de consola",
+        "Una herramienta de dibujo"
+      ],
+      "indiceCorrecta": 1
+    },
+    {
+      "texto": "¿Para qué sirve un lenguaje de programación?",
+      "opciones": [
+        "Para comunicarse con una computadora mediante instrucciones",
+        "Para mejorar la conexión a internet",
+        "Para diseñar muebles",
+        "Para reproducir música"
+      ],
+      "indiceCorrecta": 0
+    },
+    {
+      "texto": "¿Qué es un sprite en el desarrollo de videojuegos?",
+      "opciones": [
+        "Una imagen o gráfico utilizado en un juego",
+        "Un tipo de procesador",
+        "Un lenguaje de programación",
+        "Una consola portátil"
+      ],
+      "indiceCorrecta": 0
+    },
+    {
+      "texto": "¿Qué significa la sigla IA?",
+      "opciones": [
+        "Internet Avanzado",
+        "Inteligencia Artificial",
+        "Interfaz Automática",
+        "Información Analógica"
+      ],
+      "indiceCorrecta": 1
+    },
+    {
+      "texto": "¿Para qué sirve una variable en programación?",
+      "opciones": [
+        "Para almacenar datos",
+        "Para apagar la computadora",
+        "Para dibujar personajes",
+        "Para conectar un joystick"
+      ],
+      "indiceCorrecta": 0
+    },
+    {
+      "texto": "¿Qué es un prototipo de videojuego?",
+      "opciones": [
+        "Una versión inicial para probar ideas y mecánicas",
+        "La versión final del juego",
+        "Una consola de prueba",
+        "Un videojuego antiguo"
+      ],
+      "indiceCorrecta": 0
+    },
+    {
+      "texto": "¿Qué es el código fuente de un videojuego?",
+      "opciones": [
+        "Las instrucciones escritas por los programadores",
+        "La música del videojuego",
+        "Los dibujos de los personajes",
+        "El manual de instrucciones"
+      ],
+      "indiceCorrecta": 0
+    }
   ]
 }

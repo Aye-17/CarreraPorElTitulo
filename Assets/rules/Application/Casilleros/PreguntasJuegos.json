@@ -1,0 +1,154 @@
+{
+  "preguntasjuegos": [
+  {
+    "texto": "¿Cómo se llama el famoso fontanero de Nintendo que suele rescatar a la princesa Peach?",
+    "opciones": ["Sonic", "Mario", "Link", "Kirby"],
+    "indiceCorrecta": 1
+  },
+  {
+    "texto": "¿Qué tipo de juego es Minecraft principalmente?",
+    "opciones": ["De carreras", "De fútbol", "De construcción y supervivencia", "De baile"],
+    "indiceCorrecta": 2
+  },
+  {
+    "texto": "¿Cuál es el objetivo principal de Fortnite Battle Royale?",
+    "opciones": ["Ser el último jugador o equipo en pie", "Completar una carrera", "Construir una ciudad permanente", "Resolver crucigramas"],
+    "indiceCorrecta": 0
+  },
+  {
+    "texto": "¿Cómo se llama el protagonista azul de los videojuegos de Sega?",
+    "opciones": ["Crash", "Mario", "Donkey Kong", "Sonic"],
+    "indiceCorrecta": 3
+  },
+  {
+    "texto": "¿De qué tipo es Pikachu en Pokémon?",
+    "opciones": ["Tipo fuego", "Tipo eléctrico", "Tipo agua", "Tipo planta"],
+    "indiceCorrecta": 1
+  },
+  {
+    "texto": "¿Qué personaje amarillo aparece en el clásico videojuego Pac-Man?",
+    "opciones": ["Un fantasma", "Un robot", "Una criatura redonda que come puntos", "Un extraterrestre verde"],
+    "indiceCorrecta": 2
+  },
+  {
+    "texto": "¿Qué hay que hacer principalmente en Tetris?",
+    "opciones": ["Combinar piezas para completar líneas", "Disparar a enemigos", "Correr por una pista", "Capturar animales"],
+    "indiceCorrecta": 0
+  },
+  {
+    "texto": "¿Cómo se llama uno de los tres protagonistas de Grand Theft Auto V?",
+    "opciones": ["Arthur Morgan", "Joel Miller", "Nathan Drake", "Michael De Santa"],
+    "indiceCorrecta": 3
+  },
+  {
+    "texto": "¿Cómo se llama el reino donde transcurren muchas aventuras de Super Mario?",
+    "opciones": ["Hyrule", "Reino Champiñón", "Kanto", "Green Hill"],
+    "indiceCorrecta": 1
+  },
+  {
+    "texto": "En Among Us, ¿cómo se llama el jugador que intenta eliminar a los tripulantes sin ser descubierto?",
+    "opciones": ["El impostor", "El entrenador", "El constructor", "El piloto"],
+    "indiceCorrecta": 0
+  },
+  {
+    "texto": "¿Qué empresa desarrolló originalmente la saga The Sims?",
+    "opciones": ["Nintendo", "Sega", "Maxis", "Valve"],
+    "indiceCorrecta": 2
+  },
+  {
+    "texto": "¿Qué deporte se juega en EA Sports FC, anteriormente conocido como FIFA?",
+    "opciones": ["Básquet", "Tenis", "Rugby", "Fútbol"],
+    "indiceCorrecta": 3
+  },
+  {
+    "texto": "¿Cómo se llama el héroe principal de The Legend of Zelda?",
+    "opciones": ["Ganondorf", "Link", "Zelda", "Epona"],
+    "indiceCorrecta": 1
+  },
+  {
+    "texto": "¿Qué animal es Crash, el protagonista de Crash Bandicoot?",
+    "opciones": ["Un zorro", "Un mapache", "Un bandicut", "Un lobo"],
+    "indiceCorrecta": 2
+  },
+  {
+    "texto": "¿Qué se intenta combinar en Candy Crush Saga?",
+    "opciones": ["Caramelos del mismo color", "Cartas de póker", "Piezas de ajedrez", "Pelotas de fútbol"],
+    "indiceCorrecta": 0
+  },
+  {
+    "texto": "¿Cómo se llama el mundo de fantasía de World of Warcraft?",
+    "opciones": ["Tamriel", "Hyrule", "Azeroth", "San Andreas"],
+    "indiceCorrecta": 2
+  },
+  {
+    "texto": "¿Qué tipo de juego es Angry Birds?",
+    "opciones": ["Un simulador de fútbol", "Un juego de lanzar pájaros con una resortera", "Un juego de carreras", "Un juego de cocina"],
+    "indiceCorrecta": 1
+  },
+  {
+    "texto": "¿Qué personaje de Nintendo es un gorila famoso por lanzar barriles?",
+    "opciones": ["Bowser", "Yoshi", "Wario", "Donkey Kong"],
+    "indiceCorrecta": 3
+  },
+  {
+    "texto": "¿Qué es Roblox?",
+    "opciones": ["Una plataforma para crear y jugar experiencias", "Un juego exclusivo de fútbol", "Una consola portátil", "Un juego de cartas tradicional"],
+    "indiceCorrecta": 0
+  },
+  {
+    "texto": "¿Cómo se llama el modo de Call of Duty en el que los jugadores se enfrentan entre sí en diferentes mapas?",
+    "opciones": ["Modo creativo", "Modo carrera", "Multijugador", "Modo construcción"],
+    "indiceCorrecta": 2
+  },
+  {
+    "texto": "¿Qué frase aparece cuando estás a punto de realizar un movimiento final en Mortal Kombat?",
+    "opciones": ["Game Over", "Finish Him!", "Fatality Start", "Round One"],
+    "indiceCorrecta": 1
+  },
+  {
+    "texto": "¿Qué personaje es el protagonista de God of War?",
+    "opciones": ["Kratos", "Mario", "Sonic", "Nathan Drake"],
+    "indiceCorrecta": 0
+  },
+  {
+    "texto": "¿Cómo se llama el protagonista de Red Dead Redemption 2?",
+    "opciones": ["John Marston", "Arthur Morgan", "Joel Miller", "Trevor Philips"],
+    "indiceCorrecta": 1
+  },
+  {
+    "texto": "¿Qué tipo de criaturas aparecen principalmente en The Last of Us?",
+    "opciones": ["Dinosaurios", "Vampiros", "Infectados por un hongo", "Extraterrestres"],
+    "indiceCorrecta": 2
+  },
+  {
+    "texto": "¿Cuál es el objetivo principal de Fall Guys?",
+    "opciones": ["Ganar pruebas y llegar a la meta antes que los demás", "Construir casas", "Criar animales", "Resolver misterios policiales"],
+    "indiceCorrecta": 0
+  },
+  {
+    "texto": "¿Cómo se llama el personaje principal de League of Legends?",
+    "opciones": ["Mario", "Pikachu", "Sonic", "No tiene un único protagonista"],
+    "indiceCorrecta": 3
+  },
+  {
+    "texto": "¿Qué empresa creó Overwatch?",
+    "opciones": ["Nintendo", "Blizzard Entertainment", "Sega", "Rockstar Games"],
+    "indiceCorrecta": 1
+  },
+  {
+    "texto": "¿Qué personaje de Street Fighter es famoso por realizar el ataque Hadouken?",
+    "opciones": ["Ryu", "Scorpion", "Kratos", "Donkey Kong"],
+    "indiceCorrecta": 0
+  },
+  {
+    "texto": "¿Qué objeto puede utilizar el personaje para desplazarse más rápido en Subway Surfers?",
+    "opciones": ["Una bicicleta", "Un automóvil", "Una patineta", "Una motocicleta"],
+    "indiceCorrecta": 2
+  },
+  {
+    "texto": "¿Qué hay que destruir para ganar una partida clásica de Clash Royale?",
+    "opciones": ["Las torres enemigas, especialmente la Torre del Rey", "Los árboles del mapa", "Los castillos de Minecraft", "Los vehículos enemigos"],
+    "indiceCorrecta": 0
+  }
+  ]
+}
