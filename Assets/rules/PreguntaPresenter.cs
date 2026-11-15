@@ -31,16 +31,27 @@ public class PreguntaPresenter
 
     public void MostrarPregunta(Jugador jugador)
     {
-        if (banco == null || banco.preguntas == null ||
-            banco.preguntas.Length == 0)
+        if (banco == null)
+        {
+            return;
+        }
+
+        MostrarPregunta(jugador, banco.preguntas);
+    }
+
+    public void MostrarPregunta(
+        Jugador jugador,
+        PreguntaData[] preguntas)
+    {
+        if (preguntas == null || preguntas.Length == 0)
         {
             return;
         }
 
         jugadorActual = jugador;
 
-        int indice = aleatorio.Next(banco.preguntas.Length);
-        preguntaActual = banco.preguntas[indice];
+        int indice = aleatorio.Next(preguntas.Length);
+        preguntaActual = preguntas[indice];
 
         vista.MostrarPreguntaEnPantalla(preguntaActual);
     }

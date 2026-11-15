@@ -1642,6 +1642,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   archivoPreguntas: {fileID: 4900000, guid: 2d51ff101ec3f8648a053572e7cef496, type: 3}
+  archivoPreguntasJuegos: {fileID: 4900000, guid: 42aa75eacece4ae29fcf76194adbf738, type: 3}
   cantidadCasilleros: 28
 --- !u!1 &778613935
 GameObject:

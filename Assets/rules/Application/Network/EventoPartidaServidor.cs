@@ -6,6 +6,7 @@ public class EventoPartidaServidor
     public int ResultadoDado { get; private set; }
     public ulong ClientIdTurno { get; private set; }
     public PreguntaVisible Pregunta { get; private set; }
+    public bool MostrarCartelBiblioteca { get; private set; }
 
     private EventoPartidaServidor(
         bool esValido,
@@ -13,7 +14,8 @@ public class EventoPartidaServidor
         string mensaje,
         int resultadoDado,
         ulong clientIdTurno,
-        PreguntaVisible pregunta)
+        PreguntaVisible pregunta,
+        bool mostrarCartelBiblioteca)
     {
         EsValido = esValido;
         Tipo = tipo;
@@ -21,13 +23,15 @@ public class EventoPartidaServidor
         ResultadoDado = resultadoDado;
         ClientIdTurno = clientIdTurno;
         Pregunta = pregunta;
+        MostrarCartelBiblioteca = mostrarCartelBiblioteca;
     }
 
     public static EventoPartidaServidor Crear(
         TipoEventoPartida tipo,
         string mensaje,
         int resultadoDado,
-        ulong clientIdTurno)
+        ulong clientIdTurno,
+        bool mostrarCartelBiblioteca = false)
     {
         return new EventoPartidaServidor(
             true,
@@ -35,7 +39,8 @@ public class EventoPartidaServidor
             mensaje,
             resultadoDado,
             clientIdTurno,
-            null
+            null,
+            mostrarCartelBiblioteca
         );
     }
 
@@ -50,7 +55,8 @@ public class EventoPartidaServidor
             mensaje,
             0,
             clientIdTurno,
-            pregunta
+            pregunta,
+            false
         );
     }
 
@@ -64,7 +70,8 @@ public class EventoPartidaServidor
             mensaje,
             0,
             clientIdTurno,
-            null
+            null,
+            false
         );
     }
 }

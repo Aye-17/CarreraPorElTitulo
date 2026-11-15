@@ -16,11 +16,13 @@ public class UIPreguntas : MonoBehaviour, IPreguntaView
 
     [Header("Datos")]
     public TextAsset archivoJson;
+    public TextAsset archivoJsonJuegos;
 
     [Header("Temporizador")]
     public float tiempoPorPregunta = 15f;
 
     private BancoPreguntas banco;
+    private BancoPreguntasJuegos bancoPreguntasJuegos;
     private PreguntaPresenter presentador;
 
     private Coroutine coroutineTemporizador;
@@ -48,13 +50,53 @@ public class UIPreguntas : MonoBehaviour, IPreguntaView
         banco = JsonUtility.FromJson<BancoPreguntas>(
             archivoJson.text
         );
+
+        if (archivoJsonJuegos == null)
+        {
+            Debug.LogError("[UIPreguntas] Falta PreguntasJuegos.json.");
+            return;
+        }
+
+        bancoPreguntasJuegos =
+            JsonUtility.FromJson<BancoPreguntasJuegos>(
+                archivoJsonJuegos.text
+            );
+
+        if (bancoPreguntasJuegos == null ||
+            bancoPreguntasJuegos.preguntasjuegos == null ||
+            bancoPreguntasJuegos.preguntasjuegos.Length == 0)
+        {
+            Debug.LogError("[UIPreguntas] El banco de preguntas de juegos es inválido.");
+        }
     }
 
     public void MostrarPregunta(Jugador jugador)
     {
+        MostrarPregunta(jugador, TipoCasillero.Pregunta);
+    }
+
+    public void MostrarPregunta(
+        Jugador jugador,
+        TipoCasillero tipoCasillero)
+    {
         respuestaProcesada = false;
 
-        presentador.MostrarPregunta(jugador);
+        PreguntaData[] preguntas =
+            tipoCasillero == TipoCasillero.PreguntaJuego
+                ? bancoPreguntasJuegos?.preguntasjuegos
+                : banco?.preguntas;
+
+        if (preguntas == null || preguntas.Length == 0)
+        {
+            Debug.LogError(
+                tipoCasillero == TipoCasillero.PreguntaJuego
+                    ? "[UIPreguntas] No hay preguntas de juegos disponibles."
+                    : "[UIPreguntas] No hay preguntas disponibles."
+            );
+            return;
+        }
+
+        presentador.MostrarPregunta(jugador, preguntas);
     }
 
     public void MostrarPreguntaEnPantalla(PreguntaData pregunta)

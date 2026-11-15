@@ -9,6 +9,7 @@ public class GameManager : MonoBehaviour
     private List<Jugador> jugadores = new List<Jugador>();
     private int jugadorActual = 0;
     private GestorVueltas gestorVueltas;
+    private bool dadoTiradoEsteTurno;
 
     public static GameManager Instancia;
     public bool EsperandoRespuesta { get; private set; } = false;
@@ -203,26 +204,73 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        if (JuegoTerminado || contenedorCasillas == null || EsperandoRespuesta) return;
+        if (JuegoTerminado ||
+            contenedorCasillas == null ||
+            EsperandoRespuesta ||
+            dadoTiradoEsteTurno)
+        {
+            return;
+        }
 
         Jugador jugador = jugadores[jugadorActual];
 
-        if (jugador.DebeRepetirPreguntas)
+        bool estaEnBiblioteca = jugador.EstaEnBiblioteca;
+
+        if (!estaEnBiblioteca && jugador.DebeRepetirPreguntas)
         {
             EsperandoRespuesta = true;
             UIPreguntas.Instancia.MostrarPregunta(jugador);
             return;
         }
 
-        if (jugador.EstaPenalizado())
+        if (!estaEnBiblioteca && jugador.EstaPenalizado())
         {
             jugador.CumplirPenalizacion();
             SiguienteTurno();
             return;
         }
 
+        dadoTiradoEsteTurno = true;
         int resultado = Random.Range(1, 7);
         jugador.RegistrarTirada(resultado);
+
+        if (estaEnBiblioteca &&
+            !jugador.RegistrarIntentoDeSalirBiblioteca(resultado))
+        {
+            EsperandoRespuesta = true;
+
+            System.Action alTerminar = () =>
+            {
+                EsperandoRespuesta = false;
+                UIJuego.Instancia?.MostrarIntentoBiblioteca(
+                    jugador,
+                    resultado
+                );
+                SiguienteTurno();
+            };
+
+            if (dadoVisual != null)
+            {
+                Transform fichaBiblioteca =
+                    jugadorActual < fichasVisuales3D.Length &&
+                    fichasVisuales3D[jugadorActual] != null
+                        ? fichasVisuales3D[jugadorActual].transform
+                        : null;
+
+                dadoVisual.Lanzar(
+                    resultado,
+                    fichaBiblioteca,
+                    alTerminar
+                );
+            }
+            else
+            {
+                alTerminar();
+            }
+
+            return;
+        }
+
         EsperandoRespuesta = true;
 
         Transform fichaObjetivo = (jugadorActual < fichasVisuales3D.Length && fichasVisuales3D[jugadorActual] != null)
@@ -345,12 +393,46 @@ public class GameManager : MonoBehaviour
                 }
             }
 
-            if (casilleroActual.Tipo == TipoCasillero.Pregunta)
+            if (casilleroActual is CasilleroEnviarBiblioteca)
+            {
+                EsperandoRespuesta = true;
+
+                MoverFichaAIndiceConCallback(
+                    jugadorActual,
+                    jugador.PosicionActualId,
+                    () =>
+                    {
+                        if (UIJuego.Instancia != null)
+                        {
+                            UIJuego.Instancia.MostrarCartelIrABiblioteca(
+                                () =>
+                                {
+                                    EsperandoRespuesta = false;
+                                    SiguienteTurno();
+                                }
+                            );
+                        }
+                        else
+                        {
+                            EsperandoRespuesta = false;
+                            SiguienteTurno();
+                        }
+                    }
+                );
+
+                yield break;
+            }
+
+            if (casilleroActual.Tipo == TipoCasillero.Pregunta ||
+                casilleroActual.Tipo == TipoCasillero.PreguntaJuego)
             {
                 EsperandoRespuesta = true;
                 if (UIPreguntas.Instancia != null)
                 {
-                    UIPreguntas.Instancia.MostrarPregunta(jugador);
+                    UIPreguntas.Instancia.MostrarPregunta(
+                        jugador,
+                        casilleroActual.Tipo
+                    );
                 }
                 else
                 {
@@ -467,6 +549,7 @@ public class GameManager : MonoBehaviour
     {
         if (JuegoTerminado || EsModoRed) return;
 
+        dadoTiradoEsteTurno = false;
         jugadorActual++;
         if (jugadorActual >= jugadores.Count)
         {

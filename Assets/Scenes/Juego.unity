@@ -8022,6 +8022,7 @@ MonoBehaviour:
   textoAmarillo: {fileID: 2007644850}
   cuadroResultado: {fileID: 0}
   textoResultado: {fileID: 2063978304}
+  cartelIrABiblioteca: {fileID: 2800000, guid: 0a40af7845539084e810c05b1055e339, type: 3}
 --- !u!4 &1497192844
 Transform:
   m_ObjectHideFlags: 0
@@ -8194,6 +8195,7 @@ MonoBehaviour:
   - {fileID: 1377719534}
   - {fileID: 1393298896}
   archivoJson: {fileID: 4900000, guid: 2d51ff101ec3f8648a053572e7cef496, type: 3}
+  archivoJsonJuegos: {fileID: 4900000, guid: 42aa75eacece4ae29fcf76194adbf738, type: 3}
   tiempoPorPregunta: 15
 --- !u!4 &1575084436
 Transform:

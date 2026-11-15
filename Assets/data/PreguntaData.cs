@@ -11,3 +11,9 @@ public class BancoPreguntas
 {
     public PreguntaData[] preguntas;
 }
+
+[System.Serializable]
+public class BancoPreguntasJuegos
+{
+    public PreguntaData[] preguntasjuegos;
+}

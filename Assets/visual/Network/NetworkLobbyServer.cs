@@ -15,6 +15,7 @@ public class NetworkLobbyServer : NetworkBehaviour
     public event Action<string> ResumenActualizado;
     public event Action<string> ResultadoRecibido;
     public event Action<int, int[], int> EstadoVisualActualizado;
+    public event Action CartelBibliotecaRecibido;
 
     private readonly NetworkVariable<FixedString512Bytes> resumenSalas =
         new NetworkVariable<FixedString512Bytes>(
@@ -27,9 +28,11 @@ public class NetworkLobbyServer : NetworkBehaviour
 
     [Header("Configuración de Gameplay")]
     [SerializeField] private TextAsset archivoPreguntas;
+    [SerializeField] private TextAsset archivoPreguntasJuegos;
     [SerializeField] private int cantidadCasilleros = 28;
 
     private BancoPreguntas bancoPreguntas;
+    private BancoPreguntasJuegos bancoPreguntasJuegos;
 
     private readonly Dictionary<string, PartidaServidor> partidasPorSala =
         new Dictionary<string, PartidaServidor>();
@@ -84,6 +87,26 @@ public class NetworkLobbyServer : NetworkBehaviour
             bancoPreguntas.preguntas.Length == 0)
         {
             Debug.LogError("[NetworkLobbyServer] El banco de preguntas es inválido.");
+        }
+
+        if (archivoPreguntasJuegos == null)
+        {
+            Debug.LogError("[NetworkLobbyServer] Falta PreguntasJuegos.json.");
+            return;
+        }
+
+        bancoPreguntasJuegos =
+            JsonUtility.FromJson<BancoPreguntasJuegos>(
+                archivoPreguntasJuegos.text
+            );
+
+        if (bancoPreguntasJuegos == null ||
+            bancoPreguntasJuegos.preguntasjuegos == null ||
+            bancoPreguntasJuegos.preguntasjuegos.Length == 0)
+        {
+            Debug.LogError(
+                "[NetworkLobbyServer] El banco de preguntas de juegos es inválido."
+            );
         }
     }
 
@@ -160,12 +183,22 @@ public class NetworkLobbyServer : NetworkBehaviour
         Sala sala = gestorSalas.ObtenerSala(idSala);
         if (sala == null) return;
 
+        if (bancoPreguntas == null ||
+            bancoPreguntas.preguntas == null ||
+            bancoPreguntasJuegos == null ||
+            bancoPreguntasJuegos.preguntasjuegos == null)
+        {
+            Debug.LogError("[NetworkLobbyServer] No se pueden iniciar preguntas sin ambos bancos.");
+            return;
+        }
+
         try
         {
             PartidaServidor partida = new PartidaServidor(
                 ConfiguracionPartida.Crear(ModoPartida.Normal),
                 sala.Jugadores,
                 bancoPreguntas.preguntas,
+                bancoPreguntasJuegos.preguntasjuegos,
                 cantidadCasilleros
             );
 
@@ -392,6 +425,11 @@ Debug.Log($"[DIAGNOSTICO] Pregunta del evento: {evento.Pregunta != null}");
             "pero no se encontró ninguna pregunta."
         );
     }
+
+    if (evento.MostrarCartelBiblioteca)
+    {
+        MostrarCartelBibliotecaClientRpc(parametrosCliente);
+    }
 }
 
     private void EnviarPreguntaACliente(ulong clientId, PreguntaVisible pregunta)
@@ -456,6 +494,13 @@ Debug.Log($"[DIAGNOSTICO] Pregunta del evento: {evento.Pregunta != null}");
     private void RecibirResultadoClientRpc(FixedString128Bytes mensaje, ClientRpcParams parametrosRpc = default)
     {
         ResultadoRecibido?.Invoke(mensaje.ToString());
+    }
+
+    [ClientRpc]
+    private void MostrarCartelBibliotecaClientRpc(
+        ClientRpcParams parametrosRpc = default)
+    {
+        CartelBibliotecaRecibido?.Invoke();
     }
 
     private void AlCambiarResumenSalas(FixedString512Bytes anterior, FixedString512Bytes actual)

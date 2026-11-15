@@ -13,6 +13,7 @@ public class PartidaServidor
 
     private readonly Random random = new Random();
     private readonly IReadOnlyList<PreguntaData> bancoPreguntas;
+    private readonly IReadOnlyList<PreguntaData> bancoPreguntasJuegos;
 
     private PreguntaData preguntaActiva;
     private int indiceJugadorActual;
@@ -36,6 +37,21 @@ public class PartidaServidor
         IReadOnlyList<ulong> idsDeClientes,
         IReadOnlyList<PreguntaData> preguntas,
         int cantidadCasilleros)
+        : this(
+            configuracionPartida,
+            idsDeClientes,
+            preguntas,
+            preguntas,
+            cantidadCasilleros)
+    {
+    }
+
+    public PartidaServidor(
+        ConfiguracionPartida configuracionPartida,
+        IReadOnlyList<ulong> idsDeClientes,
+        IReadOnlyList<PreguntaData> preguntas,
+        IReadOnlyList<PreguntaData> preguntasJuegos,
+        int cantidadCasilleros)
     {
         if (configuracionPartida == null)
             throw new ArgumentNullException(nameof(configuracionPartida));
@@ -54,6 +70,12 @@ public class PartidaServidor
                 "La partida requiere al menos una pregunta.");
         }
 
+        if (preguntasJuegos == null || preguntasJuegos.Count == 0)
+        {
+            throw new ArgumentException(
+                "La partida requiere al menos una pregunta de juegos.");
+        }
+
         if (cantidadCasilleros <= 1)
         {
             throw new ArgumentException(
@@ -62,6 +84,7 @@ public class PartidaServidor
 
         configuracion = configuracionPartida;
         bancoPreguntas = preguntas;
+        bancoPreguntasJuegos = preguntasJuegos;
 
         gestorVueltas = new GestorVueltas(configuracion);
 
@@ -125,7 +148,27 @@ public class PartidaServidor
 
         Jugador jugador = jugadores[indiceJugadorActual];
 
-        if (jugador.DebeRepetirPreguntas)
+        int resultadoDado;
+
+        if (jugador.EstaEnBiblioteca)
+        {
+            resultadoDado = random.Next(1, 7);
+            jugador.RegistrarTirada(resultadoDado);
+
+            if (!jugador.RegistrarIntentoDeSalirBiblioteca(resultadoDado))
+            {
+                CambiarTurno();
+
+                return EventoPartidaServidor.Crear(
+                    TipoEventoPartida.TurnoCambiado,
+                    $"{jugador.Nombre} no sacó un 6 y pierde el turno " +
+                    $"({jugador.IntentosDeSalirBiblioteca}/3).",
+                    resultadoDado,
+                    ClientIdDelTurno
+                );
+            }
+        }
+        else if (jugador.DebeRepetirPreguntas)
         {
             UnityEngine.Debug.Log(
                 "[PARTIDA SERVIDOR] El jugador debe responder una pregunta pendiente."
@@ -133,10 +176,10 @@ public class PartidaServidor
 
             Fase = FasePartidaServidor.EsperandoRespuesta;
 
-            return PrepararPregunta(jugador);
+            return PrepararPregunta(jugador, bancoPreguntas);
         }
 
-        if (jugador.EstaPenalizado())
+        else if (jugador.EstaPenalizado())
         {
             jugador.CumplirPenalizacion();
 
@@ -150,9 +193,11 @@ public class PartidaServidor
             );
         }
 
-        int resultadoDado = random.Next(1, 7);
-
-        jugador.RegistrarTirada(resultadoDado);
+        else
+        {
+            resultadoDado = random.Next(1, 7);
+            jugador.RegistrarTirada(resultadoDado);
+        }
 
         jugador.Moverse(resultadoDado, tablero.Count);
 
@@ -316,6 +361,19 @@ public class PartidaServidor
 
         casillero.EjecutarEfecto(jugador);
 
+        if (casillero.Tipo == TipoCasillero.EnviarABiblioteca)
+        {
+            CambiarTurno();
+
+            return EventoPartidaServidor.Crear(
+                TipoEventoPartida.TurnoCambiado,
+                $"{jugador.Nombre} fue enviado a la biblioteca.",
+                resultadoDado,
+                ClientIdDelTurno,
+                true
+            );
+        }
+
         if (casillero.Tipo == TipoCasillero.EfectoEspecial)
         {
             AjustarPosicionAlTablero(jugador);
@@ -330,7 +388,8 @@ public class PartidaServidor
             );
         }
 
-        if (casillero.Tipo == TipoCasillero.Pregunta)
+        if (casillero.Tipo == TipoCasillero.Pregunta ||
+            casillero.Tipo == TipoCasillero.PreguntaJuego)
         {
             UnityEngine.Debug.Log(
                 "[PARTIDA SERVIDOR] ¡CASILLERO DE PREGUNTA DETECTADO!"
@@ -338,7 +397,12 @@ public class PartidaServidor
 
             Fase = FasePartidaServidor.EsperandoRespuesta;
 
-            return PrepararPregunta(jugador);
+            IReadOnlyList<PreguntaData> banco =
+                casillero.Tipo == TipoCasillero.PreguntaJuego
+                    ? bancoPreguntasJuegos
+                    : bancoPreguntas;
+
+            return PrepararPregunta(jugador, banco);
         }
 
         // MINIJUEGO: por ahora se omite y se pasa al siguiente jugador.
@@ -383,13 +447,15 @@ public class PartidaServidor
         }
     }
 
-    private EventoPartidaServidor PrepararPregunta(Jugador jugador)
+    private EventoPartidaServidor PrepararPregunta(
+        Jugador jugador,
+        IReadOnlyList<PreguntaData> preguntas)
     {
         UnityEngine.Debug.Log(
             "[PARTIDA SERVIDOR] Preparando pregunta..."
         );
 
-        if (bancoPreguntas == null || bancoPreguntas.Count == 0)
+        if (preguntas == null || preguntas.Count == 0)
         {
             UnityEngine.Debug.LogError(
                 "[PARTIDA SERVIDOR] El banco de preguntas está vacío."
@@ -401,9 +467,9 @@ public class PartidaServidor
             );
         }
 
-        int indicePregunta = random.Next(bancoPreguntas.Count);
+        int indicePregunta = random.Next(preguntas.Count);
 
-        preguntaActiva = bancoPreguntas[indicePregunta];
+        preguntaActiva = preguntas[indicePregunta];
 
         if (preguntaActiva == null)
         {

@@ -7,6 +7,8 @@ public class Jugador
     public int PosicionActualId { get; private set; }
     public string Estado { get; private set; }
     public bool TienePenalizacion { get; private set; }
+    public bool EstaEnBiblioteca { get; private set; }
+    public int IntentosDeSalirBiblioteca { get; private set; }
     public int RondaActual { get; private set; } = 1;
     public int RespuestasCorrectas { get; private set; } = 0;
     public int RespuestasTotales { get; private set; } = 0;
@@ -45,6 +47,51 @@ public class Jugador
     {
         TienePenalizacion = false;
         Estado = "Esperando Turno";
+    }
+
+    public void EnviarABiblioteca(int posicionBibliotecaId)
+    {
+        if (posicionBibliotecaId < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(posicionBibliotecaId)
+            );
+        }
+
+        EstablecerPosicion(posicionBibliotecaId);
+        TienePenalizacion = false;
+        EstaEnBiblioteca = true;
+        IntentosDeSalirBiblioteca = 0;
+        Estado = "En la biblioteca";
+    }
+
+    public bool RegistrarIntentoDeSalirBiblioteca(int resultadoDado)
+    {
+        if (!EstaEnBiblioteca)
+        {
+            throw new InvalidOperationException(
+                "El jugador no está en la biblioteca."
+            );
+        }
+
+        if (resultadoDado < 1 || resultadoDado > 6)
+        {
+            throw new ArgumentOutOfRangeException(nameof(resultadoDado));
+        }
+
+        IntentosDeSalirBiblioteca++;
+
+        if (resultadoDado == 6 || IntentosDeSalirBiblioteca >= 3)
+        {
+            EstaEnBiblioteca = false;
+            Estado = "Salió de la biblioteca";
+            return true;
+        }
+
+        Estado =
+            $"En la biblioteca ({IntentosDeSalirBiblioteca}/3 intentos)";
+
+        return false;
     }
 
     public void RegistrarTirada(int resultado)

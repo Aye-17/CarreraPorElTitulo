@@ -24,6 +24,21 @@ public static class TableroFactory
                 10, 24
             };
 
+    private static readonly HashSet<int>
+        casillerosBiblioteca =
+            new HashSet<int>
+            {
+                4, 18
+            };
+
+    private static readonly Dictionary<int, int>
+        casillerosEnviarBiblioteca =
+            new Dictionary<int, int>
+            {
+                { 11, 18 },
+                { 25, 4 }
+            };
+
     public static List<CasilleroBase>
         CrearTablero(int cantidadCasilleros)
     {
@@ -56,6 +71,25 @@ public static class TableroFactory
         int id,
         List<int> siguientesIds)
     {
+        if (casillerosBiblioteca.Contains(id))
+        {
+            return new CasilleroBiblioteca(
+                id,
+                siguientesIds
+            );
+        }
+
+        if (casillerosEnviarBiblioteca.TryGetValue(
+            id,
+            out int destinoBiblioteca))
+        {
+            return new CasilleroEnviarBiblioteca(
+                id,
+                siguientesIds,
+                destinoBiblioteca
+            );
+        }
+
         if (casillerosPregunta.Contains(id))
         {
             return new CasilleroPregunta(
@@ -80,7 +114,7 @@ public static class TableroFactory
             );
         }
 
-        return new CasilleroNormal(
+        return new CasilleroPreguntaJuego(
             id,
             siguientesIds
         );

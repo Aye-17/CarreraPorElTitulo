@@ -17,6 +17,7 @@ public class JuegoRedUI : MonoBehaviour
     [SerializeField] private Button[] botonesOpcionesRed;
 
     private NetworkLobbyServer lobbyServidor;
+    private bool esMiTurno;
 
     private void Start()
     {
@@ -26,10 +27,16 @@ public class JuegoRedUI : MonoBehaviour
 
         if (lobbyServidor == null)
         {
-            Debug.LogError("[JuegoRedUI] No se encontró NetworkLobbyServer.");
+            Debug.LogWarning(
+                "[JuegoRedUI] JuegoRed debe iniciarse desde LobbyMultijugador."
+            );
+
+            if (botonTirarDado != null)
+                botonTirarDado.interactable = false;
 
             if (textoResultado != null)
-                textoResultado.text = "Error: sin servidor.";
+                textoResultado.text =
+                    "Inicia una partida desde LobbyMultijugador.";
 
             return;
         }
@@ -47,6 +54,7 @@ public class JuegoRedUI : MonoBehaviour
         lobbyServidor.EstadoVisualActualizado += ActualizarVisual3D;
         lobbyServidor.ResultadoRecibido += MostrarResultado;
         lobbyServidor.PreguntaRecibida += MostrarPregunta;
+        lobbyServidor.CartelBibliotecaRecibido += MostrarCartelBiblioteca;
 
         ActualizarTextoSesion();
         lobbyServidor.SolicitarEstadoActualServerRpc();
@@ -61,6 +69,7 @@ public class JuegoRedUI : MonoBehaviour
         lobbyServidor.EstadoVisualActualizado -= ActualizarVisual3D;
         lobbyServidor.ResultadoRecibido -= MostrarResultado;
         lobbyServidor.PreguntaRecibida -= MostrarPregunta;
+        lobbyServidor.CartelBibliotecaRecibido -= MostrarCartelBiblioteca;
     }
 
     private void ActualizarVisual3D(
@@ -110,6 +119,7 @@ public class JuegoRedUI : MonoBehaviour
             bool esMiTurno =
                 NetworkManager.Singleton.LocalClientId == clientIdDelTurno;
 
+            this.esMiTurno = esMiTurno;
             botonTirarDado.interactable = esMiTurno;
         }
     }
@@ -120,6 +130,28 @@ public class JuegoRedUI : MonoBehaviour
             textoResultado.text = mensaje;
 
         Debug.Log($"[RED] {mensaje}");
+    }
+
+    private void MostrarCartelBiblioteca()
+    {
+        if (UIJuego.Instancia == null)
+        {
+            Debug.LogError(
+                "[JuegoRedUI] No se encontró UIJuego para mostrar el cartel."
+            );
+            return;
+        }
+
+        if (botonTirarDado != null)
+            botonTirarDado.interactable = false;
+
+        UIJuego.Instancia.MostrarCartelIrABiblioteca(
+            () =>
+            {
+                if (botonTirarDado != null)
+                    botonTirarDado.interactable = esMiTurno;
+            }
+        );
     }
 
     private void MostrarPregunta(string texto, string[] opciones)

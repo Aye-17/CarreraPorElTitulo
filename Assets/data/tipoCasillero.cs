@@ -3,5 +3,8 @@ public enum TipoCasillero
     Normal,
     Pregunta,
     EfectoEspecial,
-    Juego
+    Juego,
+    PreguntaJuego,
+    Biblioteca,
+    EnviarABiblioteca
 }
