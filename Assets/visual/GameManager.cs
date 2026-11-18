@@ -110,7 +110,7 @@ public class GameManager : MonoBehaviour
         MostrarJugadorActual();
     }
 
-    // --- MÉTODO LLAMADO POR LA RED PARA ACTUALIZAR EL ENTORNO 3D ---
+    // --- MÉTODO LLAMADO POR LA RED PARA ACTUALIZAR EL ENTORNO 3D Y LA CÁMARA ---
     public void SincronizarEstadoDesdeRed(int indiceJugadorTurno, int[] posicionesCasilleros, int valorDado)
     {
         if (rutaPosiciones == null || rutaPosiciones.Length == 0) return;
@@ -144,13 +144,12 @@ public class GameManager : MonoBehaviour
             dadoVisual.Lanzar(valorDado, fichasVisuales3D[indiceJugadorTurno].transform, null);
         }
 
-        // 3. Enfocar cámara en el jugador que tiene el turno actual
+        // 3. ENFOCAR CÁMARA DE FORMA CONTINUA EN EL JUGADOR DEL TURNO
         jugadorActual = indiceJugadorTurno;
         if (camaraPrincipalScript != null && indiceJugadorTurno >= 0 && indiceJugadorTurno < fichasVisuales3D.Length && fichasVisuales3D[indiceJugadorTurno] != null)
         {
             Transform fichaObjetivo = fichasVisuales3D[indiceJugadorTurno].transform;
-            camaraPrincipalScript.objetivo = fichaObjetivo;
-            camaraPrincipalScript.transform.position = fichaObjetivo.position + camaraPrincipalScript.offset;
+            camaraPrincipalScript.SeguirJugador(fichaObjetivo);
         }
     }
 
@@ -329,8 +328,7 @@ public class GameManager : MonoBehaviour
         if (camaraPrincipalScript != null && jugadorActual >= 0 && jugadorActual < fichasVisuales3D.Length && fichasVisuales3D[jugadorActual] != null)
         {
             Transform nuevaFicha = fichasVisuales3D[jugadorActual].transform;
-            camaraPrincipalScript.objetivo = nuevaFicha;
-            camaraPrincipalScript.transform.position = nuevaFicha.position + camaraPrincipalScript.offset;
+            camaraPrincipalScript.SeguirJugador(nuevaFicha);
         }
 
         if (UIJuego.Instancia != null)
@@ -528,6 +526,7 @@ public class GameManager : MonoBehaviour
             ResultadoVuelta resultado = gestorVueltas.ResolverLlegadaMeta(jugador);
 
             if (resultado == ResultadoVuelta.NecesitaPreguntas)
+            //[cite: 10]
             {
                 SiguienteTurno();
                 return;

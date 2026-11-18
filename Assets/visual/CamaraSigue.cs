@@ -9,7 +9,7 @@ public class CamaraSigue : MonoBehaviour
     public Vector3 offset = new Vector3(0, 5f, -5f);
 
     [Header("Suavizado del movimiento")]
-    public float velocidadSuavizado = 5f;
+    public float velocidadSuavizado = 10f;
 
     public void SeguirJugador(Transform nuevoObjetivo)
     {
@@ -17,30 +17,23 @@ public class CamaraSigue : MonoBehaviour
 
         if (objetivo != null)
         {
-            // Coloca inmediatamente la cámara
-            // cerca del nuevo jugador.
-            transform.position =
-                objetivo.position + offset;
+            // Coloca inmediatamente la cámara cerca del nuevo jugador al cambiar
+            transform.position = objetivo.position + offset;
         }
     }
-
 
     private void LateUpdate()
     {
         if (objetivo == null)
             return;
 
+        // Posición deseada basada estrictamente en la posición actual del Transform del objetivo sincronizado en red
+        Vector3 posicionDeseada = objetivo.position + offset;
 
-        Vector3 posicionDeseada =
-            objetivo.position + offset;
-
-
-        transform.position =
-            Vector3.Lerp(
-                transform.position,
-                posicionDeseada,
-                velocidadSuavizado *
-                Time.deltaTime
-            );
+        transform.position = Vector3.Lerp(
+            transform.position,
+            posicionDeseada,
+            velocidadSuavizado * Time.deltaTime
+        );
     }
 }
