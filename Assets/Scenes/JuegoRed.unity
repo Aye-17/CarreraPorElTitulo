@@ -6701,11 +6701,13 @@ MonoBehaviour:
   botonTirarDado: {fileID: 890271765}
   panelPreguntaRed: {fileID: 0}
   textoPreguntaRed: {fileID: 1768011704}
+  textoTemporizadorRed: {fileID: 0}
   botonesOpcionesRed:
   - {fileID: 1301439575}
   - {fileID: 2104247083}
   - {fileID: 1377719534}
   - {fileID: 1393298896}
+  tiempoPorPregunta: 15
 --- !u!4 &1502696109 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 32b65fbbfb347454787dc579a580df42, type: 3}
@@ -8361,11 +8363,13 @@ MonoBehaviour:
   botonTirarDado: {fileID: 890271765}
   panelPreguntaRed: {fileID: 79623013}
   textoPreguntaRed: {fileID: 1768011704}
+  textoTemporizadorRed: {fileID: 53975346}
   botonesOpcionesRed:
   - {fileID: 1301439575}
   - {fileID: 2104247083}
   - {fileID: 1377719534}
   - {fileID: 1393298896}
+  tiempoPorPregunta: 15
 --- !u!1001 &1798887316
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -1,3 +1,4 @@
+using System.Collections;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
@@ -14,10 +15,16 @@ public class JuegoRedUI : MonoBehaviour
     [Header("Pregunta")]
     [SerializeField] private GameObject panelPreguntaRed;
     [SerializeField] private TextMeshProUGUI textoPreguntaRed;
+    [SerializeField] private TextMeshProUGUI textoTemporizadorRed;
     [SerializeField] private Button[] botonesOpcionesRed;
+
+    [Header("Temporizador")]
+    [SerializeField] private float tiempoPorPregunta = 15f;
 
     private NetworkLobbyServer lobbyServidor;
     private bool esMiTurno;
+    private bool preguntaRespondida;
+    private Coroutine coroutineTemporizador;
 
     private void Start()
     {
@@ -62,6 +69,8 @@ public class JuegoRedUI : MonoBehaviour
 
     private void OnDestroy()
     {
+        DetenerTemporizador();
+
         if (lobbyServidor == null)
             return;
 
@@ -165,14 +174,13 @@ public class JuegoRedUI : MonoBehaviour
             return;
         }
 
-        // Bloquear el dado mientras se responde.
+        preguntaRespondida = false;
+
         if (botonTirarDado != null)
             botonTirarDado.interactable = false;
 
-        // Activar el panel de preguntas directamente.
         panelPreguntaRed.SetActive(true);
 
-        // Mostrar el texto de la pregunta.
         if (textoPreguntaRed != null)
         {
             textoPreguntaRed.gameObject.SetActive(true);
@@ -189,7 +197,6 @@ public class JuegoRedUI : MonoBehaviour
             return;
         }
 
-        // Configurar los botones de respuesta.
         for (int i = 0; i < botonesOpcionesRed.Length; i++)
         {
             Button boton = botonesOpcionesRed[i];
@@ -227,7 +234,6 @@ public class JuegoRedUI : MonoBehaviour
             }
         }
 
-        // Asegurar que el CanvasGroup permita mostrar e interactuar si existe.
         CanvasGroup cg = panelPreguntaRed.GetComponent<CanvasGroup>();
 
         if (cg != null)
@@ -237,11 +243,79 @@ public class JuegoRedUI : MonoBehaviour
             cg.blocksRaycasts = true;
         }
 
+        IniciarTemporizador();
+
         Debug.Log("[JuegoRedUI] Pregunta mostrada y configurada correctamente.");
+    }
+
+    private void IniciarTemporizador()
+    {
+        DetenerTemporizador();
+
+        if (textoTemporizadorRed != null)
+        {
+            textoTemporizadorRed.gameObject.SetActive(true);
+            textoTemporizadorRed.text =
+                "TIEMPO: " + Mathf.CeilToInt(tiempoPorPregunta);
+        }
+
+        coroutineTemporizador = StartCoroutine(TemporizadorPreguntaRed());
+    }
+
+    private void DetenerTemporizador()
+    {
+        if (coroutineTemporizador != null)
+        {
+            StopCoroutine(coroutineTemporizador);
+            coroutineTemporizador = null;
+        }
+    }
+
+    private IEnumerator TemporizadorPreguntaRed()
+    {
+        float tiempoRestante = tiempoPorPregunta;
+
+        while (tiempoRestante > 0f)
+        {
+            if (preguntaRespondida)
+                yield break;
+
+            if (textoTemporizadorRed != null)
+            {
+                textoTemporizadorRed.text =
+                    "TIEMPO: " + Mathf.CeilToInt(tiempoRestante);
+            }
+
+            yield return null;
+            tiempoRestante -= Time.deltaTime;
+        }
+
+        if (preguntaRespondida)
+            yield break;
+
+        preguntaRespondida = true;
+
+        if (textoTemporizadorRed != null)
+            textoTemporizadorRed.text = "TIEMPO: 0";
+
+        if (panelPreguntaRed != null)
+            panelPreguntaRed.SetActive(false);
+
+        // Se envía 99 como opción fuera de rango para registrar respuesta incorrecta por tiempo agotado
+        if (lobbyServidor != null)
+            lobbyServidor.SolicitarResponderPreguntaServerRpc(99);
+
+        coroutineTemporizador = null;
     }
 
     private void ResponderPregunta(int opcionSeleccionada)
     {
+        if (preguntaRespondida)
+            return;
+
+        preguntaRespondida = true;
+        DetenerTemporizador();
+
         Debug.Log($"[JuegoRedUI] Botón de respuesta presionado. Opción elegida: {opcionSeleccionada}");
 
         if (panelPreguntaRed != null)
