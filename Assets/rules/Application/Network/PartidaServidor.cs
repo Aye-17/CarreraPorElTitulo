@@ -405,24 +405,22 @@ public class PartidaServidor
             return PrepararPregunta(jugador, banco);
         }
 
-        // MINIJUEGO: por ahora se omite y se pasa al siguiente jugador.
+        // El turno queda bloqueado hasta que el servidor resuelva el minijuego.
         if (casillero.Tipo == TipoCasillero.Juego)
         {
             UnityEngine.Debug.Log(
                 "[PARTIDA SERVIDOR] El jugador cayó en un minijuego. " +
-                "Se omite porque todavía no está implementado."
+                "Se inicia Pong."
             );
 
-            // No se activa EsperandoMinijuego.
-            // Se avanza directamente al siguiente turno.
-            CambiarTurno();
+            Fase = FasePartidaServidor.EsperandoMinijuego;
 
             return EventoPartidaServidor.Crear(
                 TipoEventoPartida.MinijuegoPendiente,
                 $"{jugador.Nombre} cayó en un minijuego. " +
-                "¡Próximamente! Continúa el siguiente jugador.",
+                "Elegí a un rival para jugar Pong.",
                 resultadoDado,
-                ClientIdDelTurno
+                clientIds[indiceJugadorActual]
             );
         }
 
@@ -526,6 +524,37 @@ public class PartidaServidor
         return EventoPartidaServidor.Crear(
             TipoEventoPartida.TurnoCambiado,
             "Estado de partida actualizado.",
+            0,
+            ClientIdDelTurno
+        );
+    }
+
+    public EventoPartidaServidor FinalizarMinijuego(ulong clientIdGanador)
+    {
+        if (Fase != FasePartidaServidor.EsperandoMinijuego)
+        {
+            return EventoPartidaServidor.AccionInvalida(
+                "No hay un minijuego pendiente.",
+                ClientIdDelTurno
+            );
+        }
+
+        if (!indiceJugadorPorClientId.TryGetValue(clientIdGanador, out int indiceGanador))
+        {
+            return EventoPartidaServidor.AccionInvalida(
+                "El ganador no pertenece a esta partida.",
+                ClientIdDelTurno
+            );
+        }
+
+        jugadores[indiceGanador].SumarRespuestaPorMinijuego();
+        string nombreGanador = jugadores[indiceGanador].Nombre;
+
+        CambiarTurno();
+
+        return EventoPartidaServidor.Crear(
+            TipoEventoPartida.TurnoCambiado,
+            $"{nombreGanador} ganó el Pong y obtuvo una respuesta correcta.",
             0,
             ClientIdDelTurno
         );

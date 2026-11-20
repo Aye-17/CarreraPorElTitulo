@@ -1,4 +1,5 @@
 using System.Collections;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -63,6 +64,13 @@ public class MiniJuegoManager : MonoBehaviour
     private int puntosDerecha;
 
     private bool jugando = false;
+    private bool modoRedPongActivo;
+    private bool resultadoRedPong;
+    private ulong clientIdRetadorRed;
+    private ulong clientIdRivalRed;
+    private ulong[] participantesPongRed;
+    private float tiempoEnvioControlRed;
+    private NetworkLobbyServer lobbyServidor;
 
     // =========================================================
     // UNITY
@@ -84,8 +92,40 @@ public class MiniJuegoManager : MonoBehaviour
         OcultarTodo();
     }
 
+    private void Start()
+    {
+        lobbyServidor = NetworkLobbyServer.Instance != null
+            ? NetworkLobbyServer.Instance
+            : FindObjectOfType<NetworkLobbyServer>();
+
+        if (lobbyServidor == null)
+            return;
+
+        lobbyServidor.SeleccionPongRecibida += MostrarSeleccionPongRed;
+        lobbyServidor.PongPartidaIniciadaRecibida += IniciarPongRed;
+        lobbyServidor.PongEstadoRecibido += AplicarEstadoPongRed;
+        lobbyServidor.PongFinalizadoRecibido += MostrarResultadoPongRed;
+    }
+
+    private void OnDestroy()
+    {
+        if (lobbyServidor == null)
+            return;
+
+        lobbyServidor.SeleccionPongRecibida -= MostrarSeleccionPongRed;
+        lobbyServidor.PongPartidaIniciadaRecibida -= IniciarPongRed;
+        lobbyServidor.PongEstadoRecibido -= AplicarEstadoPongRed;
+        lobbyServidor.PongFinalizadoRecibido -= MostrarResultadoPongRed;
+    }
+
     private void Update()
     {
+        if (modoRedPongActivo)
+        {
+            ActualizarControlesPongRed();
+            return;
+        }
+
         if (!jugando)
             return;
 
@@ -119,6 +159,214 @@ public class MiniJuegoManager : MonoBehaviour
             "\nELIGE A QUIÉN RETAR";
 
         CrearBotonesJugadores();
+    }
+
+    private void MostrarSeleccionPongRed(
+        ulong clientIdRetador,
+        ulong[] participantes)
+    {
+        modoRedPongActivo = false;
+        jugando = false;
+        resultadoRedPong = false;
+        clientIdRetadorRed = clientIdRetador;
+        participantesPongRed = participantes;
+
+        panelPrincipal.SetActive(true);
+        panelSeleccion.SetActive(true);
+        panelPong.SetActive(false);
+        panelResultado.SetActive(false);
+
+        bool soyRetador =
+            NetworkManager.Singleton != null &&
+            NetworkManager.Singleton.LocalClientId == clientIdRetador;
+
+        if (soyRetador)
+        {
+            tituloSeleccion.text = "ELIGE A QUIÉN RETAR\nTodos verán la partida";
+            CrearBotonesRivalesPongRed();
+        }
+        else
+        {
+            tituloSeleccion.text =
+                $"Jugador {ObtenerNumeroJugadorRed(clientIdRetador, participantes)} " +
+                "está eligiendo rival.\nTodos verán el Pong.";
+            LimpiarBotonesRivalesPongRed();
+        }
+    }
+
+    private void CrearBotonesRivalesPongRed()
+    {
+        LimpiarBotonesRivalesPongRed();
+
+        if (participantesPongRed == null)
+            return;
+
+        int cantidadBotones = 0;
+        for (int i = 0; i < participantesPongRed.Length; i++)
+        {
+            ulong clientIdRival = participantesPongRed[i];
+            if (clientIdRival == clientIdRetadorRed)
+                continue;
+
+            GameObject botonObjeto = CrearBoton(
+                panelSeleccion.transform,
+                "BotonRivalRed" + i,
+                $"Jugador {i + 1}"
+            );
+
+            RectTransform rect = botonObjeto.GetComponent<RectTransform>();
+            rect.sizeDelta = new Vector2(420, 70);
+            rect.anchoredPosition = new Vector2(0, -120 - cantidadBotones * 90);
+
+            Button boton = botonObjeto.GetComponent<Button>();
+            boton.onClick.AddListener(() =>
+            {
+                if (lobbyServidor == null)
+                {
+                    Debug.LogError("[MiniJuegoManager] No se encontró NetworkLobbyServer.");
+                    return;
+                }
+
+                boton.interactable = false;
+                tituloSeleccion.text = "Esperando que el servidor inicie el Pong...";
+                lobbyServidor.SolicitarSeleccionarRivalPongServerRpc(clientIdRival);
+            });
+
+            cantidadBotones++;
+        }
+    }
+
+    private void LimpiarBotonesRivalesPongRed()
+    {
+        for (int i = panelSeleccion.transform.childCount - 1; i >= 0; i--)
+        {
+            Transform hijo = panelSeleccion.transform.GetChild(i);
+            if (hijo.name.StartsWith("BotonRivalRed"))
+                Destroy(hijo.gameObject);
+        }
+    }
+
+    private void IniciarPongRed(
+        ulong clientIdRetador,
+        ulong clientIdRival,
+        ulong[] participantes)
+    {
+        modoRedPongActivo = true;
+        resultadoRedPong = false;
+        jugando = false;
+        clientIdRetadorRed = clientIdRetador;
+        clientIdRivalRed = clientIdRival;
+        participantesPongRed = participantes;
+        tiempoEnvioControlRed = 0f;
+
+        panelPrincipal.SetActive(true);
+        panelSeleccion.SetActive(false);
+        panelPong.SetActive(true);
+        panelResultado.SetActive(false);
+
+        textoJugadorIzquierda.text =
+            $"Jugador {ObtenerNumeroJugadorRed(clientIdRetador, participantes)} (W/S)";
+        textoJugadorDerecha.text =
+            $"Jugador {ObtenerNumeroJugadorRed(clientIdRival, participantes)} (↑/↓)";
+
+        paletaIzquierda.anchoredPosition = new Vector2(-430f, 0f);
+        paletaDerecha.anchoredPosition = new Vector2(430f, 0f);
+        pelota.anchoredPosition = Vector2.zero;
+        puntosIzquierda = 0;
+        puntosDerecha = 0;
+        ActualizarMarcador();
+    }
+
+    private void AplicarEstadoPongRed(
+        float posicionIzquierda,
+        float posicionDerecha,
+        float pelotaX,
+        float pelotaY,
+        int marcadorIzquierda,
+        int marcadorDerecha)
+    {
+        if (!modoRedPongActivo)
+            return;
+
+        paletaIzquierda.anchoredPosition = new Vector2(-430f, posicionIzquierda);
+        paletaDerecha.anchoredPosition = new Vector2(430f, posicionDerecha);
+        pelota.anchoredPosition = new Vector2(pelotaX, pelotaY);
+        puntosIzquierda = marcadorIzquierda;
+        puntosDerecha = marcadorDerecha;
+        ActualizarMarcador();
+    }
+
+    private void MostrarResultadoPongRed(
+        ulong clientIdGanador,
+        int marcadorIzquierda,
+        int marcadorDerecha)
+    {
+        modoRedPongActivo = false;
+        jugando = false;
+        resultadoRedPong = true;
+        panelPong.SetActive(false);
+        panelResultado.SetActive(true);
+
+        int numeroGanador = ObtenerNumeroJugadorRed(
+            clientIdGanador,
+            participantesPongRed
+        );
+
+        textoResultado.text =
+            $"¡GANÓ EL JUGADOR {numeroGanador}!\n\n" +
+            $"{marcadorIzquierda} - {marcadorDerecha}\n\n" +
+            "+1 RESPUESTA CORRECTA";
+    }
+
+    private void ActualizarControlesPongRed()
+    {
+        if (lobbyServidor == null || NetworkManager.Singleton == null)
+            return;
+
+        ulong clientIdLocal = NetworkManager.Singleton.LocalClientId;
+        float movimiento = 0f;
+
+        if (clientIdLocal == clientIdRetadorRed)
+        {
+            if (Input.GetKey(KeyCode.W))
+                movimiento = 1f;
+            else if (Input.GetKey(KeyCode.S))
+                movimiento = -1f;
+        }
+        else if (clientIdLocal == clientIdRivalRed)
+        {
+            if (Input.GetKey(KeyCode.UpArrow))
+                movimiento = 1f;
+            else if (Input.GetKey(KeyCode.DownArrow))
+                movimiento = -1f;
+        }
+        else
+        {
+            return;
+        }
+
+        tiempoEnvioControlRed += Time.unscaledDeltaTime;
+        if (tiempoEnvioControlRed < 0.05f)
+            return;
+
+        tiempoEnvioControlRed = 0f;
+        lobbyServidor.SolicitarControlPongServerRpc(movimiento);
+    }
+
+    private int ObtenerNumeroJugadorRed(
+        ulong clientId,
+        ulong[] participantes)
+    {
+        if (participantes != null)
+        {
+            for (int i = 0; i < participantes.Length; i++)
+            {
+                if (participantes[i] == clientId)
+                    return i + 1;
+            }
+        }
+
+        return 0;
     }
 
     // =========================================================
@@ -559,6 +807,13 @@ public class MiniJuegoManager : MonoBehaviour
     public void ContinuarDespuesDelMinijuego()
     {
         panelPrincipal.SetActive(false);
+
+        if (resultadoRedPong)
+        {
+            resultadoRedPong = false;
+            participantesPongRed = null;
+            return;
+        }
 
         jugadorRetador = null;
         jugadorRetado = null;
