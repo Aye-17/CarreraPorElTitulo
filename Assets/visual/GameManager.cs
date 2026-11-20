@@ -48,7 +48,10 @@ public class GameManager : MonoBehaviour
 
         Instancia = this;
 
-        configuracion = ConfiguracionPartida.Crear(SesionPartida.ModoSeleccionado);
+        ModoPartida modo = EsModoRed
+            ? ModoPartida.Rapido
+            : SesionPartida.ModoSeleccionado;
+        configuracion = ConfiguracionPartida.Crear(modo);
         gestorVueltas = new GestorVueltas(configuracion);
     }
 

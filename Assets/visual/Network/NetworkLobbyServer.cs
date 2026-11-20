@@ -286,7 +286,7 @@ public class NetworkLobbyServer : NetworkBehaviour
         try
         {
             partida = new PartidaServidor(
-                ConfiguracionPartida.Crear(ModoPartida.Normal),
+                ConfiguracionPartida.Crear(ModoPartida.Rapido),
                 sala.Jugadores,
                 bancoPreguntas.preguntas,
                 cantidadCasilleros
