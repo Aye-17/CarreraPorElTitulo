@@ -4,14 +4,20 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
 
+
+
 public class JuegoRedUI : MonoBehaviour
 {
+
+    
     [System.Serializable]
     private struct SlotJugadorUI
     {
         public string nombreJugador;
         public GameObject contenedorJugador;
         public TextMeshProUGUI textoEstadisticas;
+        
+        
     }
 
     [System.Serializable]
@@ -84,7 +90,7 @@ public class JuegoRedUI : MonoBehaviour
         lobbyServidor.EstadisticasJugadoresActualizadas += ActualizarEstadisticasJugadores;
         lobbyServidor.ResultadoRecibido += MostrarResultado;
         lobbyServidor.PreguntaRecibida += MostrarPregunta;
-        lobbyServidor.CartelBibliotecaRecibido += MostrarCartelBiblioteca;
+        //lobbyServidor.CartelBibliotecaRecibido += MostrarCartelBiblioteca;
 
         ActualizarTextoSesion();
         lobbyServidor.SolicitarEstadoActualServerRpc();
@@ -103,7 +109,7 @@ public class JuegoRedUI : MonoBehaviour
         lobbyServidor.EstadisticasJugadoresActualizadas -= ActualizarEstadisticasJugadores;
         lobbyServidor.ResultadoRecibido -= MostrarResultado;
         lobbyServidor.PreguntaRecibida -= MostrarPregunta;
-        lobbyServidor.CartelBibliotecaRecibido -= MostrarCartelBiblioteca;
+        //lobbyServidor.CartelBibliotecaRecibido -= MostrarCartelBiblioteca;
     }
 
     private void OcultarTodosLosPanelesPregunta()

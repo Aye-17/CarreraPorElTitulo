@@ -45,11 +45,12 @@ public class LobbyUI : MonoBehaviour
             SolicitarIniciarPartida
         );
 
+/*
         botonTirarDado.onClick.AddListener(
             SolicitarTirarDado
-        );
+        );*/
 
-        botonTirarDado.interactable = false;
+        //botonTirarDado.interactable = false;
 
         lobbyServidor.EstadoPartidaRecibido +=
         ActualizarEstadoPartida;
@@ -174,7 +175,7 @@ private void ActualizarEstadoPartida(
     string estado,
     ulong clientIdDelTurno)
 {
-    textoEstadoPartida.text = estado;
+    //textoEstadoPartida.text = estado;
 
     bool esMiTurno =
         NetworkManager.Singleton != null &&

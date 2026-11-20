@@ -24,9 +24,12 @@ public class DadoVisual : MonoBehaviour
 
     private void Awake()
     {
-        // Buscamos todos los renderers en este objeto y en sus hijos
-        renderersVisuales = GetComponentsInChildren<Renderer>();
-        CambiarVisibilidadDado(false);
+        renderersVisuales = GetComponentsInChildren<Renderer>(true);
+
+        foreach (Renderer render in renderersVisuales)
+        {
+            render.enabled = true;
+        }
     }
 
     public void Lanzar(int resultado, Transform objetivo, System.Action alTerminar)
@@ -36,8 +39,6 @@ public class DadoVisual : MonoBehaviour
 
     private IEnumerator RutinaGirarDado(int resultado, Transform objetivo, System.Action alTerminar)
     {
-        CambiarVisibilidadDado(true);
-
         float tiempoAnimacion = 0f;
 
         // 1. Fase de giro caótico
@@ -68,18 +69,7 @@ public class DadoVisual : MonoBehaviour
         yield return new WaitForSeconds(tiempoLectura);
 
         // 4. Terminar
-        CambiarVisibilidadDado(false);
         alTerminar?.Invoke();
-    }
-
-    private void CambiarVisibilidadDado(bool estado)
-    {
-        if (renderersVisuales == null) return;
-        
-        foreach (Renderer render in renderersVisuales)
-        {
-            render.enabled = estado;
-        }
     }
 
     private Vector3 ObtenerRotacionParaCara(int resultado)

@@ -7,6 +7,7 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
+
 public class NetworkLobbyServer : NetworkBehaviour
 {
     public static NetworkLobbyServer Instance { get; private set; }
@@ -16,7 +17,7 @@ public class NetworkLobbyServer : NetworkBehaviour
     public event Action<string, ulong> EstadoPartidaRecibido;
     public event Action<string> ResumenActualizado;
     public event Action<string> ResultadoRecibido;
-    public event Action CartelBibliotecaRecibido;
+    //public event Action CartelBibliotecaRecibido;
     public event Action<int, int[], int> EstadoVisualActualizado;
     public event Action<int[], int[]> EstadisticasJugadoresActualizadas;
     public event Action<ulong, ulong[]> SeleccionPongRecibida;

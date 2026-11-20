@@ -62,12 +62,17 @@ public class MenuBotones : MonoBehaviour{
     SceneManager.LoadScene("Configuracion");
     }
 
-    public void AbrirLobbyMultijugador(){
-    SceneManager.LoadScene("LobbyMultijugador");
-    }
-
     public void AbrirReglas(){
     SceneManager.LoadScene("Reglas");
+    }
+
+
+    public void ConectarMultijugador(){
+    SceneManager.LoadScene("Lobby");
+    }
+    
+    public void ConectarCreacionDeSalas(){
+    SceneManager.LoadScene("Salas");
     }
 
     public void SalirDeLaAplicacion(){

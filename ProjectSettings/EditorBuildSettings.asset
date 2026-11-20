@@ -21,15 +21,12 @@ EditorBuildSettings:
     path: Assets/Scenes/Victoria.unity
     guid: 0d52fd554cb506e4984bd7e265107a9f
   - enabled: 1
-    path: Assets/Scenes/PruebaRed.unity
-    guid: 230aae4b32674b348a49cc5663b8f605
-  - enabled: 1
     path: Assets/Scenes/JuegoRed.unity
     guid: e1e7cddc0deee6541802e7fad7b88e69
-  - enabled: 0
-    path: Assets/Scenes/123.unity
-    guid: 219391774b5bdee4181caeaaab06c414
   - enabled: 1
-    path: Assets/Scenes/LobbyMultijugador.unity
-    guid: 2d2370cc1821afe4b861264b7f8d8f0a
+    path: Assets/Scenes/Lobby.unity
+    guid: 560a6dff99a9b0941a1487377806f6e2
+  - enabled: 1
+    path: Assets/Scenes/Salas.unity
+    guid: 5c22485f56dbcfd48aadff34b12e17c5
   m_configObjects: {}
