@@ -22,6 +22,10 @@ public class DadoVisual : MonoBehaviour
     // Usamos un arreglo por si el dado tiene varias partes (ej: el cubo y los puntos separados)
     private Renderer[] renderersVisuales;
 
+    
+    /// ///
+    
+
     private void Awake()
     {
         renderersVisuales = GetComponentsInChildren<Renderer>(true);
