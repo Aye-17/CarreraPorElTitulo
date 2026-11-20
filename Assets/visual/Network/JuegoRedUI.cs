@@ -6,11 +6,22 @@ using UnityEngine.UI;
 
 public class JuegoRedUI : MonoBehaviour
 {
+    [System.Serializable]
+    private struct SlotJugadorUI
+    {
+        public string nombreJugador;
+        public GameObject contenedorJugador;
+        public TextMeshProUGUI textoEstadisticas;
+    }
+
     [Header("Estado")]
     [SerializeField] private TextMeshProUGUI textoSesion;
     [SerializeField] private TextMeshProUGUI textoEstadoPartida;
     [SerializeField] private TextMeshProUGUI textoResultado;
     [SerializeField] private Button botonTirarDado;
+
+    [Header("Estadisticas por Jugador (Rojo, Azul, Verde, Amarillo)")]
+    [SerializeField] private SlotJugadorUI[] slotsJugadores = new SlotJugadorUI[4];
 
     [Header("Pregunta")]
     [SerializeField] private GameObject panelPreguntaRed;
@@ -59,6 +70,7 @@ public class JuegoRedUI : MonoBehaviour
 
         lobbyServidor.EstadoPartidaRecibido += ActualizarEstadoPartida;
         lobbyServidor.EstadoVisualActualizado += ActualizarVisual3D;
+        lobbyServidor.EstadisticasJugadoresActualizadas += ActualizarEstadisticasJugadores;
         lobbyServidor.ResultadoRecibido += MostrarResultado;
         lobbyServidor.PreguntaRecibida += MostrarPregunta;
         lobbyServidor.CartelBibliotecaRecibido += MostrarCartelBiblioteca;
@@ -76,6 +88,7 @@ public class JuegoRedUI : MonoBehaviour
 
         lobbyServidor.EstadoPartidaRecibido -= ActualizarEstadoPartida;
         lobbyServidor.EstadoVisualActualizado -= ActualizarVisual3D;
+        lobbyServidor.EstadisticasJugadoresActualizadas -= ActualizarEstadisticasJugadores;
         lobbyServidor.ResultadoRecibido -= MostrarResultado;
         lobbyServidor.PreguntaRecibida -= MostrarPregunta;
         lobbyServidor.CartelBibliotecaRecibido -= MostrarCartelBiblioteca;
@@ -93,6 +106,40 @@ public class JuegoRedUI : MonoBehaviour
                 posicionesCasilleros,
                 valorDado
             );
+        }
+    }
+
+    private void ActualizarEstadisticasJugadores(
+        int[] vueltasPorJugador,
+        int[] correctasPorJugador)
+    {
+        if (slotsJugadores == null)
+            return;
+
+        int cantidadActivos = vueltasPorJugador != null ? vueltasPorJugador.Length : 0;
+
+        for (int i = 0; i < slotsJugadores.Length; i++)
+        {
+            SlotJugadorUI slot = slotsJugadores[i];
+            bool estaEnPartida = i < cantidadActivos;
+
+            if (slot.contenedorJugador != null)
+                slot.contenedorJugador.SetActive(estaEnPartida);
+
+            if (!estaEnPartida || slot.textoEstadisticas == null)
+                continue;
+
+            int vuelta = vueltasPorJugador[i];
+            int correctas = (correctasPorJugador != null && i < correctasPorJugador.Length)
+                ? correctasPorJugador[i]
+                : 0;
+
+            string etiqueta = string.IsNullOrWhiteSpace(slot.nombreJugador)
+                ? $"Jugador {i + 1}"
+                : slot.nombreJugador;
+
+            slot.textoEstadisticas.text =
+                $"{etiqueta}\nVuelta: {vuelta} | Correctas: {correctas}";
         }
     }
 
@@ -301,7 +348,6 @@ public class JuegoRedUI : MonoBehaviour
         if (panelPreguntaRed != null)
             panelPreguntaRed.SetActive(false);
 
-        // Se envía 99 como opción fuera de rango para registrar respuesta incorrecta por tiempo agotado
         if (lobbyServidor != null)
             lobbyServidor.SolicitarResponderPreguntaServerRpc(99);
 

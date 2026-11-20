@@ -6699,6 +6699,19 @@ MonoBehaviour:
   textoEstadoPartida: {fileID: 866502353}
   textoResultado: {fileID: 2063978304}
   botonTirarDado: {fileID: 890271765}
+  slotsJugadores:
+  - nombreJugador: 
+    contenedorJugador: {fileID: 0}
+    textoEstadisticas: {fileID: 0}
+  - nombreJugador: 
+    contenedorJugador: {fileID: 0}
+    textoEstadisticas: {fileID: 0}
+  - nombreJugador: 
+    contenedorJugador: {fileID: 0}
+    textoEstadisticas: {fileID: 0}
+  - nombreJugador: 
+    contenedorJugador: {fileID: 0}
+    textoEstadisticas: {fileID: 0}
   panelPreguntaRed: {fileID: 0}
   textoPreguntaRed: {fileID: 1768011704}
   textoTemporizadorRed: {fileID: 0}
@@ -8361,6 +8374,19 @@ MonoBehaviour:
   textoEstadoPartida: {fileID: 866502353}
   textoResultado: {fileID: 2063978304}
   botonTirarDado: {fileID: 890271765}
+  slotsJugadores:
+  - nombreJugador: Rojo
+    contenedorJugador: {fileID: 1316045108}
+    textoEstadisticas: {fileID: 86202088}
+  - nombreJugador: Azul
+    contenedorJugador: {fileID: 1792888092}
+    textoEstadisticas: {fileID: 469232822}
+  - nombreJugador: Verde
+    contenedorJugador: {fileID: 1034864363}
+    textoEstadisticas: {fileID: 241971112}
+  - nombreJugador: Amarillo
+    contenedorJugador: {fileID: 1150724536}
+    textoEstadisticas: {fileID: 2007644850}
   panelPreguntaRed: {fileID: 79623013}
   textoPreguntaRed: {fileID: 1768011704}
   textoTemporizadorRed: {fileID: 53975346}
@@ -9699,7 +9725,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 0, y: -70}
+  m_AnchoredPosition: {x: -244, y: -65.7}
   m_SizeDelta: {x: 1250, y: 80}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2118121456

@@ -14,8 +14,11 @@ public class NetworkLobbyServer : NetworkBehaviour
     public event Action<string, ulong> EstadoPartidaRecibido;
     public event Action<string> ResumenActualizado;
     public event Action<string> ResultadoRecibido;
-    public event Action<int, int[], int> EstadoVisualActualizado;
     public event Action CartelBibliotecaRecibido;
+    public event Action<int, int[], int> EstadoVisualActualizado;
+
+    // (vueltasPorJugador, correctasPorJugador) en el mismo orden de los jugadores de la partida
+    public event Action<int[], int[]> EstadisticasJugadoresActualizadas;
 
     private readonly NetworkVariable<FixedString512Bytes> resumenSalas =
         new NetworkVariable<FixedString512Bytes>(
@@ -28,11 +31,9 @@ public class NetworkLobbyServer : NetworkBehaviour
 
     [Header("Configuración de Gameplay")]
     [SerializeField] private TextAsset archivoPreguntas;
-    [SerializeField] private TextAsset archivoPreguntasJuegos;
     [SerializeField] private int cantidadCasilleros = 28;
 
     private BancoPreguntas bancoPreguntas;
-    private BancoPreguntasJuegos bancoPreguntasJuegos;
 
     private readonly Dictionary<string, PartidaServidor> partidasPorSala =
         new Dictionary<string, PartidaServidor>();
@@ -49,6 +50,7 @@ public class NetworkLobbyServer : NetworkBehaviour
             Destroy(gameObject);
             return;
         }
+
         Instance = this;
     }
 
@@ -88,26 +90,6 @@ public class NetworkLobbyServer : NetworkBehaviour
         {
             Debug.LogError("[NetworkLobbyServer] El banco de preguntas es inválido.");
         }
-
-        if (archivoPreguntasJuegos == null)
-        {
-            Debug.LogError("[NetworkLobbyServer] Falta PreguntasJuegos.json.");
-            return;
-        }
-
-        bancoPreguntasJuegos =
-            JsonUtility.FromJson<BancoPreguntasJuegos>(
-                archivoPreguntasJuegos.text
-            );
-
-        if (bancoPreguntasJuegos == null ||
-            bancoPreguntasJuegos.preguntasjuegos == null ||
-            bancoPreguntasJuegos.preguntasjuegos.Length == 0)
-        {
-            Debug.LogError(
-                "[NetworkLobbyServer] El banco de preguntas de juegos es inválido."
-            );
-        }
     }
 
     [ServerRpc(RequireOwnership = false)]
@@ -125,7 +107,11 @@ public class NetworkLobbyServer : NetworkBehaviour
             return;
         }
 
-        Sala nuevaSala = gestorSalas.CrearSala(clientId, nombreSala.ToString(), maxJugadores);
+        Sala nuevaSala = gestorSalas.CrearSala(
+            clientId,
+            nombreSala.ToString(),
+            maxJugadores
+        );
 
         if (nuevaSala == null)
         {
@@ -162,15 +148,35 @@ public class NetworkLobbyServer : NetworkBehaviour
 
         ResultadoUnionSala resultado = sala.IntentarUnir(clientId);
 
-        if (resultado == ResultadoUnionSala.Jugador || resultado == ResultadoUnionSala.Espectador)
+        if (resultado == ResultadoUnionSala.Jugador)
         {
             salaPorCliente.Add(clientId, sala.Id);
             ActualizarResumenEnServidor();
-            EnviarResultadoACliente(clientId, $"Te uniste a {sala.Id}.");
+            EnviarResultadoACliente(clientId, $"Te uniste a {sala.Id} como jugador.");
             return;
         }
 
-        EnviarResultadoACliente(clientId, "No se pudo unir a la sala.");
+        if (resultado == ResultadoUnionSala.Espectador)
+        {
+            salaPorCliente.Add(clientId, sala.Id);
+            ActualizarResumenEnServidor();
+            EnviarResultadoACliente(clientId, $"Te uniste a {sala.Id} como espectador.");
+            return;
+        }
+
+        if (resultado == ResultadoUnionSala.SalaLlena)
+        {
+            EnviarResultadoACliente(clientId, "La sala está llena.");
+            return;
+        }
+
+        if (resultado == ResultadoUnionSala.SalaTerminada)
+        {
+            EnviarResultadoACliente(clientId, "La sala ya terminó.");
+            return;
+        }
+
+        EnviarResultadoACliente(clientId, "Ya estabas dentro de esa sala.");
     }
 
     [ServerRpc(RequireOwnership = false)]
@@ -178,68 +184,103 @@ public class NetworkLobbyServer : NetworkBehaviour
     {
         ulong clientId = parametrosRpc.Receive.SenderClientId;
 
-        if (!salaPorCliente.TryGetValue(clientId, out string idSala)) return;
-
-        Sala sala = gestorSalas.ObtenerSala(idSala);
-        if (sala == null) return;
-
-        if (bancoPreguntas == null ||
-            bancoPreguntas.preguntas == null ||
-            bancoPreguntasJuegos == null ||
-            bancoPreguntasJuegos.preguntasjuegos == null)
+        if (!salaPorCliente.TryGetValue(clientId, out string idSala))
         {
-            Debug.LogError("[NetworkLobbyServer] No se pueden iniciar preguntas sin ambos bancos.");
+            EnviarResultadoACliente(clientId, "No pertenecés a ninguna sala.");
             return;
         }
 
+        Sala sala = gestorSalas.ObtenerSala(idSala);
+
+        if (sala == null)
+        {
+            EnviarResultadoACliente(clientId, "La sala no existe.");
+            return;
+        }
+
+        if (bancoPreguntas == null || bancoPreguntas.preguntas == null || bancoPreguntas.preguntas.Length == 0)
+        {
+            EnviarResultadoACliente(clientId, "No hay preguntas configuradas en el servidor.");
+            return;
+        }
+
+        PartidaServidor partida;
+
         try
         {
-            PartidaServidor partida = new PartidaServidor(
+            partida = new PartidaServidor(
                 ConfiguracionPartida.Crear(ModoPartida.Normal),
                 sala.Jugadores,
                 bancoPreguntas.preguntas,
-                bancoPreguntasJuegos.preguntasjuegos,
                 cantidadCasilleros
             );
-
-            if (sala.IntentarIniciar(clientId))
-            {
-                partidasPorSala.Add(sala.Id, partida);
-                EnviarEstadoPartidaASala(
-                    sala,
-                    partida,
-                    EventoPartidaServidor.Crear(TipoEventoPartida.TurnoCambiado, "La partida comenzó.", 0, partida.ClientIdDelTurno)
-                );
-                ActualizarResumenEnServidor();
-                CargarJuegoParaSala(sala);
-            }
         }
-        catch (Exception ex)
+        catch (Exception excepcion)
         {
-            Debug.LogError($"[Server] Error al iniciar partida: {ex.Message}");
+            EnviarResultadoACliente(clientId, $"No se pudo crear la partida: {excepcion.Message}");
+            return;
         }
+
+        bool inicioCorrecto = sala.IntentarIniciar(clientId);
+
+        if (!inicioCorrecto)
+        {
+            EnviarResultadoACliente(clientId, "Solo el creador puede iniciar una sala con al menos dos jugadores.");
+            return;
+        }
+
+        partidasPorSala.Add(sala.Id, partida);
+
+        EnviarEstadoPartidaASala(
+            sala,
+            partida,
+            EventoPartidaServidor.Crear(
+                TipoEventoPartida.TurnoCambiado,
+                "La partida comenzó.",
+                0,
+                partida.ClientIdDelTurno
+            )
+        );
+
+        ActualizarResumenEnServidor();
+        EnviarResultadoACliente(clientId, $"La partida de {sala.Id} comenzó.");
+
+        CargarJuegoParaSala(sala);
     }
 
     private void CargarJuegoParaSala(Sala sala)
     {
-        List<ulong> destinatarios = new List<ulong>(sala.Jugadores);
+        List<ulong> destinatarios = new List<ulong>();
+        destinatarios.AddRange(sala.Jugadores);
         destinatarios.AddRange(sala.Espectadores);
 
         ClientRpcParams parametrosCliente = new ClientRpcParams
         {
-            Send = new ClientRpcSendParams { TargetClientIds = destinatarios.ToArray() }
+            Send = new ClientRpcSendParams
+            {
+                TargetClientIds = destinatarios.ToArray()
+            }
         };
 
-        PrepararJuegoClientRpc(new FixedString32Bytes(sala.Id), parametrosCliente);
+        PrepararJuegoClientRpc(
+            new FixedString32Bytes(sala.Id),
+            parametrosCliente
+        );
 
         if (IsServer)
         {
-            NetworkManager.Singleton.SceneManager.LoadScene("JuegoRed", LoadSceneMode.Single);
+            NetworkManager.Singleton.SceneManager.LoadScene(
+                "JuegoRed",
+                LoadSceneMode.Single
+            );
         }
     }
 
     [ClientRpc]
-    private void PrepararJuegoClientRpc(FixedString32Bytes idSala, ClientRpcParams parametrosRpc = default)
+    private void PrepararJuegoClientRpc(
+        FixedString32Bytes idSala,
+        ClientRpcParams parametrosRpc = default
+    )
     {
         SesionRedCliente.EstablecerSala(idSala.ToString());
     }
@@ -248,66 +289,83 @@ public class NetworkLobbyServer : NetworkBehaviour
     public void SolicitarEstadoActualServerRpc(ServerRpcParams parametrosRpc = default)
     {
         ulong clientId = parametrosRpc.Receive.SenderClientId;
+
         if (!salaPorCliente.TryGetValue(clientId, out string idSala)) return;
 
         Sala sala = gestorSalas.ObtenerSala(idSala);
         if (sala == null || sala.Estado != EstadoSala.EnJuego) return;
 
-        if (partidasPorSala.TryGetValue(idSala, out PartidaServidor partida))
-        {
-            EnviarEstadoPartidaASala(sala, partida, partida.ObtenerEstadoActual());
-        }
+        if (!partidasPorSala.TryGetValue(idSala, out PartidaServidor partida)) return;
+
+        EnviarEstadoPartidaASala(sala, partida, partida.ObtenerEstadoActual());
     }
 
     [ServerRpc(RequireOwnership = false)]
     public void SolicitarTirarDadoServerRpc(ServerRpcParams parametrosRpc = default)
     {
-        Debug.Log("[DIAGNOSTICO] Se recibió una solicitud para tirar el dado.");
-
         ulong clientId = parametrosRpc.Receive.SenderClientId;
-        if (!salaPorCliente.TryGetValue(clientId, out string idSala)) return;
+
+        if (!salaPorCliente.TryGetValue(clientId, out string idSala))
+        {
+            EnviarResultadoACliente(clientId, "No pertenecés a una sala.");
+            return;
+        }
 
         Sala sala = gestorSalas.ObtenerSala(idSala);
-        if (sala == null || sala.Estado != EstadoSala.EnJuego) return;
 
-        if (partidasPorSala.TryGetValue(idSala, out PartidaServidor partida))
+        if (sala == null || sala.Estado != EstadoSala.EnJuego)
         {
-            Debug.Log($"[SERVIDOR] Solicitud de tirar dado recibida del Cliente {clientId}. Turno actual: {partida.ClientIdDelTurno}");
-            EventoPartidaServidor evento = partida.SolicitarTirarDado(clientId);
-            
-            if (evento.EsValido)
-            {
-                EnviarEstadoPartidaASala(sala, partida, evento);
-            }
-            else
-            {
-                Debug.LogWarning($"[SERVIDOR] Acción inválida de tirada: {evento.Mensaje}");
-                EnviarResultadoACliente(clientId, evento.Mensaje);
-            }
+            EnviarResultadoACliente(clientId, "La partida no está en curso.");
+            return;
         }
+
+        if (!partidasPorSala.TryGetValue(idSala, out PartidaServidor partida))
+        {
+            EnviarResultadoACliente(clientId, "No existe estado de partida.");
+            return;
+        }
+
+        EventoPartidaServidor evento = partida.SolicitarTirarDado(clientId);
+
+        if (!evento.EsValido)
+        {
+            EnviarResultadoACliente(clientId, evento.Mensaje);
+            return;
+        }
+
+        EnviarEstadoPartidaASala(sala, partida, evento);
     }
 
     [ServerRpc(RequireOwnership = false)]
-    public void SolicitarResponderPreguntaServerRpc(int opcionSeleccionada, ServerRpcParams parametrosRpc = default)
+    public void SolicitarResponderPreguntaServerRpc(
+        int opcionSeleccionada,
+        ServerRpcParams parametrosRpc = default
+    )
     {
         ulong clientId = parametrosRpc.Receive.SenderClientId;
-        if (!salaPorCliente.TryGetValue(clientId, out string idSala)) return;
 
-        if (partidasPorSala.TryGetValue(idSala, out PartidaServidor partida))
+        if (!salaPorCliente.TryGetValue(clientId, out string idSala))
         {
-            Sala sala = gestorSalas.ObtenerSala(idSala);
-            Debug.Log($"[SERVIDOR] Respuesta de pregunta recibida del Cliente {clientId}. Opción: {opcionSeleccionada}");
-            
-            EventoPartidaServidor evento = partida.SolicitarRespuesta(clientId, opcionSeleccionada);
-            if (evento.EsValido)
-            {
-                EnviarEstadoPartidaASala(sala, partida, evento);
-            }
-            else
-            {
-                EnviarResultadoACliente(clientId, evento.Mensaje);
-            }
+            EnviarResultadoACliente(clientId, "No pertenecés a una sala.");
+            return;
         }
+
+        if (!partidasPorSala.TryGetValue(idSala, out PartidaServidor partida))
+        {
+            EnviarResultadoACliente(clientId, "No existe una partida activa.");
+            return;
+        }
+
+        Sala sala = gestorSalas.ObtenerSala(idSala);
+        EventoPartidaServidor evento = partida.SolicitarRespuesta(clientId, opcionSeleccionada);
+
+        if (!evento.EsValido)
+        {
+            EnviarResultadoACliente(clientId, evento.Mensaje);
+            return;
+        }
+
+        EnviarEstadoPartidaASala(sala, partida, evento);
     }
 
     private void ActualizarResumenEnServidor()
@@ -318,12 +376,23 @@ public class NetworkLobbyServer : NetworkBehaviour
 
     private string ConstruirResumenSalas()
     {
-        if (gestorSalas == null || gestorSalas.Salas.Count == 0) return "No hay salas creadas.";
+        if (gestorSalas == null || gestorSalas.Salas.Count == 0)
+        {
+            return "No hay salas creadas.";
+        }
+
         StringBuilder resumen = new StringBuilder();
+
         foreach (Sala sala in gestorSalas.Salas)
         {
-            resumen.AppendLine($"{sala.Id} | {sala.Nombre} | {sala.Jugadores.Count}/{sala.MaxJugadores} | {sala.Estado}");
+            resumen.AppendLine(
+                $"{sala.Id} | {sala.Nombre} | " +
+                $"{sala.Jugadores.Count}/{sala.MaxJugadores} jugadores | " +
+                $"{sala.Estado} | " +
+                $"{sala.Espectadores.Count} espectadores"
+            );
         }
+
         return resumen.ToString();
     }
 
@@ -331,116 +400,71 @@ public class NetworkLobbyServer : NetworkBehaviour
     {
         ClientRpcParams parametrosCliente = new ClientRpcParams
         {
-            Send = new ClientRpcSendParams { TargetClientIds = new ulong[] { clientId } }
+            Send = new ClientRpcSendParams
+            {
+                TargetClientIds = new ulong[] { clientId }
+            }
         };
+
         RecibirResultadoClientRpc(new FixedString128Bytes(mensaje ?? ""), parametrosCliente);
     }
 
-    private void EnviarEstadoPartidaASala(
-    Sala sala,
-    PartidaServidor partida,
-    EventoPartidaServidor evento)
-{
-  Debug.Log("[DIAGNOSTICO] Entró en EnviarEstadoPartidaASala.");
-
-Debug.Log($"[DIAGNOSTICO] Tipo de evento: {evento.Tipo}");
-Debug.Log($"[DIAGNOSTICO] Fase de partida: {partida.Fase}");
-Debug.Log($"[DIAGNOSTICO] Jugador del turno: {partida.ClientIdDelTurno}");
-Debug.Log($"[DIAGNOSTICO] Pregunta del evento: {evento.Pregunta != null}");
-
-    List<ulong> destinatarios = new List<ulong>(sala.Jugadores);
-    destinatarios.AddRange(sala.Espectadores);
-
-    ClientRpcParams parametrosCliente = new ClientRpcParams
+    private void EnviarEstadoPartidaASala(Sala sala, PartidaServidor partida, EventoPartidaServidor evento)
     {
-        Send = new ClientRpcSendParams
+        List<ulong> destinatarios = new List<ulong>();
+        destinatarios.AddRange(sala.Jugadores);
+        destinatarios.AddRange(sala.Espectadores);
+
+        ClientRpcParams parametrosCliente = new ClientRpcParams
         {
-            TargetClientIds = destinatarios.ToArray()
+            Send = new ClientRpcSendParams
+            {
+                TargetClientIds = destinatarios.ToArray()
+            }
+        };
+
+        string estado = ConstruirEstadoPartida(partida, evento);
+        RecibirEstadoPartidaClientRpc(new FixedString128Bytes(estado), partida.ClientIdDelTurno, parametrosCliente);
+
+        int cantidadJugadores = partida.Jugadores.Count;
+        int[] posiciones = new int[cantidadJugadores];
+        int[] vueltas = new int[cantidadJugadores];
+        int[] correctas = new int[cantidadJugadores];
+        int indiceTurno = 0;
+
+        for (int i = 0; i < cantidadJugadores; i++)
+        {
+            Jugador jugador = partida.Jugadores[i];
+            posiciones[i] = jugador.PosicionActualId;
+            vueltas[i] = jugador.RondaActual;
+            correctas[i] = jugador.RespuestasCorrectas;
+
+            if (i < sala.Jugadores.Count && sala.Jugadores[i] == partida.ClientIdDelTurno)
+            {
+                indiceTurno = i;
+            }
         }
-    };
 
-    string estado =
-        $"{evento.Mensaje}\nTurno: Cliente {partida.ClientIdDelTurno}";
+        RecibirEstadoVisualClientRpc(indiceTurno, posiciones, evento.ResultadoDado, parametrosCliente);
+        RecibirEstadisticasJugadoresClientRpc(vueltas, correctas, parametrosCliente);
 
-    RecibirEstadoPartidaClientRpc(
-        new FixedString512Bytes(estado),
-        partida.ClientIdDelTurno,
-        parametrosCliente
-    );
-
-    int[] posiciones = new int[partida.Jugadores.Count];
-
-    int indiceTurno = 0;
-
-    for (int i = 0; i < partida.Jugadores.Count; i++)
-    {
-        posiciones[i] = partida.Jugadores[i].PosicionActualId;
-
-        if (i < sala.Jugadores.Count &&
-            sala.Jugadores[i] == partida.ClientIdDelTurno)
+        if (evento.Tipo == TipoEventoPartida.PreguntaPendiente && evento.Pregunta != null)
         {
-            indiceTurno = i;
+            EnviarPreguntaACliente(partida.ClientIdDelTurno, evento.Pregunta);
         }
     }
 
-    RecibirEstadoVisualClientRpc(
-        indiceTurno,
-        posiciones,
-        evento.ResultadoDado,
-        parametrosCliente
-    );
-
-    // DETECCIÓN Y ENVÍO DE PREGUNTAS
-
-    PreguntaVisible pregunta = evento.Pregunta;
-
-    if (pregunta == null &&
-        partida.Fase == FasePartidaServidor.EsperandoRespuesta)
+    private string ConstruirEstadoPartida(PartidaServidor partida, EventoPartidaServidor evento)
     {
-        Debug.LogWarning(
-            "[SERVIDOR] El evento no contiene pregunta. " +
-            "Intentando recuperar la pregunta activa."
-        );
-
-        pregunta = partida.ObtenerPreguntaPendiente();
+        StringBuilder estado = new StringBuilder();
+        estado.AppendLine(evento.Mensaje);
+        estado.AppendLine($"Turno: Cliente {partida.ClientIdDelTurno}");
+        return estado.ToString();
     }
-
-    if (partida.Fase == FasePartidaServidor.EsperandoRespuesta &&
-        pregunta != null)
-    {
-        Debug.Log(
-            $"[SERVIDOR] ¡PREGUNTA CONFIRMADA! " +
-            $"Enviando al cliente {partida.ClientIdDelTurno}"
-        );
-
-        EnviarPreguntaACliente(
-            partida.ClientIdDelTurno,
-            pregunta
-        );
-    }
-    else if (partida.Fase == FasePartidaServidor.EsperandoRespuesta)
-    {
-        Debug.LogError(
-            "[SERVIDOR] ERROR: La partida espera respuesta, " +
-            "pero no se encontró ninguna pregunta."
-        );
-    }
-
-    if (evento.MostrarCartelBiblioteca)
-    {
-        MostrarCartelBibliotecaClientRpc(parametrosCliente);
-    }
-}
 
     private void EnviarPreguntaACliente(ulong clientId, PreguntaVisible pregunta)
     {
-        Debug.Log("[DIAGNOSTICO] Se está intentando enviar la pregunta al cliente.");
-
-        if (pregunta == null)
-        {
-            Debug.LogWarning("[SERVIDOR] Intento de enviar una pregunta nula.");
-            return;
-        }
+        if (pregunta == null) return;
 
         string texto = pregunta.Texto ?? "¿Pregunta?";
         string op0 = (pregunta.Opciones != null && pregunta.Opciones.Length > 0) ? pregunta.Opciones[0] : "Opción A";
@@ -450,7 +474,10 @@ Debug.Log($"[DIAGNOSTICO] Pregunta del evento: {evento.Pregunta != null}");
 
         ClientRpcParams parametrosCliente = new ClientRpcParams
         {
-            Send = new ClientRpcSendParams { TargetClientIds = new ulong[] { clientId } }
+            Send = new ClientRpcSendParams
+            {
+                TargetClientIds = new ulong[] { clientId }
+            }
         };
 
         RecibirPreguntaClientRpc(
@@ -464,13 +491,32 @@ Debug.Log($"[DIAGNOSTICO] Pregunta del evento: {evento.Pregunta != null}");
     }
 
     [ClientRpc]
-    private void RecibirEstadoVisualClientRpc(int indiceJugadorTurno, int[] posicionesCasilleros, int valorDado, ClientRpcParams parametrosRpc = default)
+    private void RecibirEstadoVisualClientRpc(
+        int indiceJugadorTurno,
+        int[] posicionesCasilleros,
+        int valorDado,
+        ClientRpcParams parametrosRpc = default
+    )
     {
         EstadoVisualActualizado?.Invoke(indiceJugadorTurno, posicionesCasilleros, valorDado);
     }
 
     [ClientRpc]
-    private void RecibirEstadoPartidaClientRpc(FixedString512Bytes estado, ulong clientIdDelTurno, ClientRpcParams parametrosRpc = default)
+    private void RecibirEstadisticasJugadoresClientRpc(
+        int[] vueltasPorJugador,
+        int[] correctasPorJugador,
+        ClientRpcParams parametrosRpc = default
+    )
+    {
+        EstadisticasJugadoresActualizadas?.Invoke(vueltasPorJugador, correctasPorJugador);
+    }
+
+    [ClientRpc]
+    private void RecibirEstadoPartidaClientRpc(
+        FixedString512Bytes estado,
+        ulong clientIdDelTurno,
+        ClientRpcParams parametrosRpc = default
+    )
     {
         EstadoPartidaRecibido?.Invoke(estado.ToString(), clientIdDelTurno);
     }
@@ -485,22 +531,25 @@ Debug.Log($"[DIAGNOSTICO] Pregunta del evento: {evento.Pregunta != null}");
         ClientRpcParams parametrosRpc = default
     )
     {
-        Debug.Log($"[CLIENTE {NetworkManager.Singleton.LocalClientId}] ¡Pregunta recibida por RPC! Texto: {texto}");
-        string[] opciones = new string[] { opcion0.ToString(), opcion1.ToString(), opcion2.ToString(), opcion3.ToString() };
-        PreguntaRecibida?.Invoke(texto.ToString(), opciones);
+        PreguntaRecibida?.Invoke(
+            texto.ToString(),
+            new string[]
+            {
+                opcion0.ToString(),
+                opcion1.ToString(),
+                opcion2.ToString(),
+                opcion3.ToString()
+            }
+        );
     }
 
     [ClientRpc]
-    private void RecibirResultadoClientRpc(FixedString128Bytes mensaje, ClientRpcParams parametrosRpc = default)
+    private void RecibirResultadoClientRpc(
+        FixedString128Bytes mensaje,
+        ClientRpcParams parametrosRpc = default
+    )
     {
         ResultadoRecibido?.Invoke(mensaje.ToString());
-    }
-
-    [ClientRpc]
-    private void MostrarCartelBibliotecaClientRpc(
-        ClientRpcParams parametrosRpc = default)
-    {
-        CartelBibliotecaRecibido?.Invoke();
     }
 
     private void AlCambiarResumenSalas(FixedString512Bytes anterior, FixedString512Bytes actual)
