@@ -14,6 +14,15 @@ public class JuegoRedUI : MonoBehaviour
         public TextMeshProUGUI textoEstadisticas;
     }
 
+    [System.Serializable]
+    private struct BloquePanelPregunta
+    {
+        public GameObject panel;
+        public TextMeshProUGUI textoPregunta;
+        public TextMeshProUGUI textoTemporizador;
+        public Button[] botonesOpciones;
+    }
+
     [Header("Estado")]
     [SerializeField] private TextMeshProUGUI textoSesion;
     [SerializeField] private TextMeshProUGUI textoEstadoPartida;
@@ -23,18 +32,21 @@ public class JuegoRedUI : MonoBehaviour
     [Header("Estadisticas por Jugador (Rojo, Azul, Verde, Amarillo)")]
     [SerializeField] private SlotJugadorUI[] slotsJugadores = new SlotJugadorUI[4];
 
-    [Header("Pregunta")]
-    [SerializeField] private GameObject panelPreguntaRed;
-    [SerializeField] private TextMeshProUGUI textoPreguntaRed;
-    [SerializeField] private TextMeshProUGUI textoTemporizadorRed;
-    [SerializeField] private Button[] botonesOpcionesRed;
+    [Header("Pregunta Normal")]
+    [SerializeField] private BloquePanelPregunta panelPreguntaNormal;
 
-    [Header("Temporizador")]
+    [Header("Pregunta de Juegos")]
+    [SerializeField] private BloquePanelPregunta panelPreguntaJuego;
+
+    [Header("Temporizador y Demora")]
+    [SerializeField] private float segundosEsperaPregunta = 1.5f;
     [SerializeField] private float tiempoPorPregunta = 15f;
 
     private NetworkLobbyServer lobbyServidor;
     private bool esMiTurno;
     private bool preguntaRespondida;
+    private BloquePanelPregunta panelActivoActual;
+    private Coroutine coroutineMostrarPregunta;
     private Coroutine coroutineTemporizador;
 
     private void Start()
@@ -62,8 +74,7 @@ public class JuegoRedUI : MonoBehaviour
         if (botonTirarDado != null)
             botonTirarDado.interactable = false;
 
-        if (panelPreguntaRed != null)
-            panelPreguntaRed.SetActive(false);
+        OcultarTodosLosPanelesPregunta();
 
         if (botonTirarDado != null)
             botonTirarDado.onClick.AddListener(SolicitarTirarDado);
@@ -81,6 +92,7 @@ public class JuegoRedUI : MonoBehaviour
 
     private void OnDestroy()
     {
+        DetenerEsperaPregunta();
         DetenerTemporizador();
 
         if (lobbyServidor == null)
@@ -92,6 +104,15 @@ public class JuegoRedUI : MonoBehaviour
         lobbyServidor.ResultadoRecibido -= MostrarResultado;
         lobbyServidor.PreguntaRecibida -= MostrarPregunta;
         lobbyServidor.CartelBibliotecaRecibido -= MostrarCartelBiblioteca;
+    }
+
+    private void OcultarTodosLosPanelesPregunta()
+    {
+        if (panelPreguntaNormal.panel != null)
+            panelPreguntaNormal.panel.SetActive(false);
+
+        if (panelPreguntaJuego.panel != null)
+            panelPreguntaJuego.panel.SetActive(false);
     }
 
     private void ActualizarVisual3D(
@@ -210,79 +231,92 @@ public class JuegoRedUI : MonoBehaviour
         );
     }
 
-    private void MostrarPregunta(string texto, string[] opciones)
+    private void MostrarPregunta(string texto, string[] opciones, bool esPreguntaJuego)
     {
-        Debug.Log("[DIAGNOSTICO] Se ejecutó MostrarPregunta en la interfaz.");
-        Debug.Log($"[JuegoRedUI] MOSTRANDO PREGUNTA: {texto}");
+        BloquePanelPregunta bloqueElegido = esPreguntaJuego && panelPreguntaJuego.panel != null
+            ? panelPreguntaJuego
+            : panelPreguntaNormal;
 
-        if (panelPreguntaRed == null)
+        if (bloqueElegido.panel == null)
         {
-            Debug.LogError("[JuegoRedUI] ERROR: PanelPreguntaRed no está asignado en el Inspector.");
+            Debug.LogError("[JuegoRedUI] ERROR: No hay panel de pregunta asignado en el Inspector.");
             return;
         }
-
-        preguntaRespondida = false;
 
         if (botonTirarDado != null)
             botonTirarDado.interactable = false;
 
-        panelPreguntaRed.SetActive(true);
+        DetenerEsperaPregunta();
+        DetenerTemporizador();
 
-        if (textoPreguntaRed != null)
+        coroutineMostrarPregunta = StartCoroutine(
+            MostrarPreguntaConDemora(bloqueElegido, texto, opciones)
+        );
+    }
+
+    private IEnumerator MostrarPreguntaConDemora(
+        BloquePanelPregunta bloque,
+        string texto,
+        string[] opciones)
+    {
+        if (segundosEsperaPregunta > 0f)
         {
-            textoPreguntaRed.gameObject.SetActive(true);
-            textoPreguntaRed.text = texto;
+            yield return new WaitForSeconds(segundosEsperaPregunta);
         }
-        else
+
+        coroutineMostrarPregunta = null;
+
+        if (bloque.panel == null)
+            yield break;
+
+        OcultarTodosLosPanelesPregunta();
+        panelActivoActual = bloque;
+        preguntaRespondida = false;
+
+        bloque.panel.SetActive(true);
+
+        if (bloque.textoPregunta != null)
         {
-            Debug.LogError("[JuegoRedUI] No está asignado TextoPreguntaRed.");
+            bloque.textoPregunta.gameObject.SetActive(true);
+            bloque.textoPregunta.text = texto;
         }
 
-        if (botonesOpcionesRed == null || botonesOpcionesRed.Length == 0)
+        if (bloque.botonesOpciones != null && bloque.botonesOpciones.Length > 0)
         {
-            Debug.LogError("[JuegoRedUI] No hay botones de opciones asignados.");
-            return;
-        }
-
-        for (int i = 0; i < botonesOpcionesRed.Length; i++)
-        {
-            Button boton = botonesOpcionesRed[i];
-
-            if (boton == null)
-                continue;
-
-            int indiceOpcion = i;
-
-            boton.gameObject.SetActive(true);
-
-            TextMeshProUGUI textoBoton =
-                boton.GetComponentInChildren<TextMeshProUGUI>(true);
-
-            if (textoBoton != null)
+            for (int i = 0; i < bloque.botonesOpciones.Length; i++)
             {
-                textoBoton.gameObject.SetActive(true);
+                Button boton = bloque.botonesOpciones[i];
+                if (boton == null) continue;
+
+                int indiceOpcion = i;
+                boton.gameObject.SetActive(true);
+
+                TextMeshProUGUI textoBoton =
+                    boton.GetComponentInChildren<TextMeshProUGUI>(true);
+
+                if (textoBoton != null)
+                {
+                    textoBoton.gameObject.SetActive(true);
+                    textoBoton.text = (opciones != null && i < opciones.Length)
+                        ? opciones[i]
+                        : "";
+                }
+
+                boton.onClick.RemoveAllListeners();
 
                 if (opciones != null && i < opciones.Length)
-                    textoBoton.text = opciones[i];
+                {
+                    boton.interactable = true;
+                    boton.onClick.AddListener(() => ResponderPregunta(indiceOpcion));
+                }
                 else
-                    textoBoton.text = "";
-            }
-
-            boton.onClick.RemoveAllListeners();
-
-            if (opciones != null && i < opciones.Length)
-            {
-                boton.interactable = true;
-                boton.onClick.AddListener(() => ResponderPregunta(indiceOpcion));
-            }
-            else
-            {
-                boton.interactable = false;
+                {
+                    boton.interactable = false;
+                }
             }
         }
 
-        CanvasGroup cg = panelPreguntaRed.GetComponent<CanvasGroup>();
-
+        CanvasGroup cg = bloque.panel.GetComponent<CanvasGroup>();
         if (cg != null)
         {
             cg.alpha = 1f;
@@ -290,23 +324,30 @@ public class JuegoRedUI : MonoBehaviour
             cg.blocksRaycasts = true;
         }
 
-        IniciarTemporizador();
-
-        Debug.Log("[JuegoRedUI] Pregunta mostrada y configurada correctamente.");
+        IniciarTemporizador(bloque.textoTemporizador);
     }
 
-    private void IniciarTemporizador()
+    private void DetenerEsperaPregunta()
+    {
+        if (coroutineMostrarPregunta != null)
+        {
+            StopCoroutine(coroutineMostrarPregunta);
+            coroutineMostrarPregunta = null;
+        }
+    }
+
+    private void IniciarTemporizador(TextMeshProUGUI textoTimer)
     {
         DetenerTemporizador();
 
-        if (textoTemporizadorRed != null)
+        if (textoTimer != null)
         {
-            textoTemporizadorRed.gameObject.SetActive(true);
-            textoTemporizadorRed.text =
+            textoTimer.gameObject.SetActive(true);
+            textoTimer.text =
                 "TIEMPO: " + Mathf.CeilToInt(tiempoPorPregunta);
         }
 
-        coroutineTemporizador = StartCoroutine(TemporizadorPreguntaRed());
+        coroutineTemporizador = StartCoroutine(TemporizadorPreguntaRed(textoTimer));
     }
 
     private void DetenerTemporizador()
@@ -318,7 +359,7 @@ public class JuegoRedUI : MonoBehaviour
         }
     }
 
-    private IEnumerator TemporizadorPreguntaRed()
+    private IEnumerator TemporizadorPreguntaRed(TextMeshProUGUI textoTimer)
     {
         float tiempoRestante = tiempoPorPregunta;
 
@@ -327,9 +368,9 @@ public class JuegoRedUI : MonoBehaviour
             if (preguntaRespondida)
                 yield break;
 
-            if (textoTemporizadorRed != null)
+            if (textoTimer != null)
             {
-                textoTemporizadorRed.text =
+                textoTimer.text =
                     "TIEMPO: " + Mathf.CeilToInt(tiempoRestante);
             }
 
@@ -342,11 +383,10 @@ public class JuegoRedUI : MonoBehaviour
 
         preguntaRespondida = true;
 
-        if (textoTemporizadorRed != null)
-            textoTemporizadorRed.text = "TIEMPO: 0";
+        if (textoTimer != null)
+            textoTimer.text = "TIEMPO: 0";
 
-        if (panelPreguntaRed != null)
-            panelPreguntaRed.SetActive(false);
+        OcultarTodosLosPanelesPregunta();
 
         if (lobbyServidor != null)
             lobbyServidor.SolicitarResponderPreguntaServerRpc(99);
@@ -360,12 +400,9 @@ public class JuegoRedUI : MonoBehaviour
             return;
 
         preguntaRespondida = true;
+        DetenerEsperaPregunta();
         DetenerTemporizador();
-
-        Debug.Log($"[JuegoRedUI] Botón de respuesta presionado. Opción elegida: {opcionSeleccionada}");
-
-        if (panelPreguntaRed != null)
-            panelPreguntaRed.SetActive(false);
+        OcultarTodosLosPanelesPregunta();
 
         if (lobbyServidor != null)
             lobbyServidor.SolicitarResponderPreguntaServerRpc(opcionSeleccionada);

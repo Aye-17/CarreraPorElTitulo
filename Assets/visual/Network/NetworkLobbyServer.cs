@@ -10,14 +10,13 @@ public class NetworkLobbyServer : NetworkBehaviour
 {
     public static NetworkLobbyServer Instance { get; private set; }
 
-    public event Action<string, string[]> PreguntaRecibida;
+    // (textoPregunta, opciones, esPreguntaJuego)
+    public event Action<string, string[], bool> PreguntaRecibida;
     public event Action<string, ulong> EstadoPartidaRecibido;
     public event Action<string> ResumenActualizado;
     public event Action<string> ResultadoRecibido;
     public event Action CartelBibliotecaRecibido;
     public event Action<int, int[], int> EstadoVisualActualizado;
-
-    // (vueltasPorJugador, correctasPorJugador) en el mismo orden de los jugadores de la partida
     public event Action<int[], int[]> EstadisticasJugadoresActualizadas;
 
     private readonly NetworkVariable<FixedString512Bytes> resumenSalas =
@@ -31,9 +30,11 @@ public class NetworkLobbyServer : NetworkBehaviour
 
     [Header("Configuración de Gameplay")]
     [SerializeField] private TextAsset archivoPreguntas;
+    [SerializeField] private TextAsset archivoPreguntasJuegos;
     [SerializeField] private int cantidadCasilleros = 28;
 
     private BancoPreguntas bancoPreguntas;
+    private BancoPreguntasJuegos bancoPreguntasJuegos;
 
     private readonly Dictionary<string, PartidaServidor> partidasPorSala =
         new Dictionary<string, PartidaServidor>();
@@ -89,6 +90,11 @@ public class NetworkLobbyServer : NetworkBehaviour
             bancoPreguntas.preguntas.Length == 0)
         {
             Debug.LogError("[NetworkLobbyServer] El banco de preguntas es inválido.");
+        }
+
+        if (archivoPreguntasJuegos != null)
+        {
+            bancoPreguntasJuegos = JsonUtility.FromJson<BancoPreguntasJuegos>(archivoPreguntasJuegos.text);
         }
     }
 
@@ -239,7 +245,8 @@ public class NetworkLobbyServer : NetworkBehaviour
                 "La partida comenzó.",
                 0,
                 partida.ClientIdDelTurno
-            )
+            ),
+            clientId
         );
 
         ActualizarResumenEnServidor();
@@ -297,7 +304,7 @@ public class NetworkLobbyServer : NetworkBehaviour
 
         if (!partidasPorSala.TryGetValue(idSala, out PartidaServidor partida)) return;
 
-        EnviarEstadoPartidaASala(sala, partida, partida.ObtenerEstadoActual());
+        EnviarEstadoPartidaASala(sala, partida, partida.ObtenerEstadoActual(), clientId);
     }
 
     [ServerRpc(RequireOwnership = false)]
@@ -333,7 +340,7 @@ public class NetworkLobbyServer : NetworkBehaviour
             return;
         }
 
-        EnviarEstadoPartidaASala(sala, partida, evento);
+        EnviarEstadoPartidaASala(sala, partida, evento, clientId);
     }
 
     [ServerRpc(RequireOwnership = false)]
@@ -365,7 +372,7 @@ public class NetworkLobbyServer : NetworkBehaviour
             return;
         }
 
-        EnviarEstadoPartidaASala(sala, partida, evento);
+        EnviarEstadoPartidaASala(sala, partida, evento, clientId);
     }
 
     private void ActualizarResumenEnServidor()
@@ -409,7 +416,12 @@ public class NetworkLobbyServer : NetworkBehaviour
         RecibirResultadoClientRpc(new FixedString128Bytes(mensaje ?? ""), parametrosCliente);
     }
 
-    private void EnviarEstadoPartidaASala(Sala sala, PartidaServidor partida, EventoPartidaServidor evento)
+    private void EnviarEstadoPartidaASala(
+        Sala sala,
+        PartidaServidor partida,
+        EventoPartidaServidor evento,
+        ulong clientIdEjecutor
+    )
     {
         List<ulong> destinatarios = new List<ulong>();
         destinatarios.AddRange(sala.Jugadores);
@@ -424,13 +436,18 @@ public class NetworkLobbyServer : NetworkBehaviour
         };
 
         string estado = ConstruirEstadoPartida(partida, evento);
-        RecibirEstadoPartidaClientRpc(new FixedString128Bytes(estado), partida.ClientIdDelTurno, parametrosCliente);
+        RecibirEstadoPartidaClientRpc(
+            new FixedString512Bytes(estado.Length > 500 ? estado.Substring(0, 500) : estado),
+            partida.ClientIdDelTurno,
+            parametrosCliente
+        );
 
         int cantidadJugadores = partida.Jugadores.Count;
         int[] posiciones = new int[cantidadJugadores];
         int[] vueltas = new int[cantidadJugadores];
         int[] correctas = new int[cantidadJugadores];
         int indiceTurno = 0;
+        int indiceEjecutor = 0;
 
         for (int i = 0; i < cantidadJugadores; i++)
         {
@@ -439,19 +456,49 @@ public class NetworkLobbyServer : NetworkBehaviour
             vueltas[i] = jugador.RondaActual;
             correctas[i] = jugador.RespuestasCorrectas;
 
-            if (i < sala.Jugadores.Count && sala.Jugadores[i] == partida.ClientIdDelTurno)
+            if (i < sala.Jugadores.Count)
             {
-                indiceTurno = i;
+                if (sala.Jugadores[i] == partida.ClientIdDelTurno)
+                    indiceTurno = i;
+
+                if (sala.Jugadores[i] == clientIdEjecutor)
+                    indiceEjecutor = i;
             }
         }
 
-        RecibirEstadoVisualClientRpc(indiceTurno, posiciones, evento.ResultadoDado, parametrosCliente);
+        int indiceVisual = evento.ResultadoDado > 0 ? indiceEjecutor : indiceTurno;
+
+        RecibirEstadoVisualClientRpc(indiceVisual, posiciones, evento.ResultadoDado, parametrosCliente);
         RecibirEstadisticasJugadoresClientRpc(vueltas, correctas, parametrosCliente);
 
         if (evento.Tipo == TipoEventoPartida.PreguntaPendiente && evento.Pregunta != null)
         {
-            EnviarPreguntaACliente(partida.ClientIdDelTurno, evento.Pregunta);
+            int posActual = (indiceEjecutor >= 0 && indiceEjecutor < posiciones.Length)
+                ? posiciones[indiceEjecutor]
+                : -1;
+
+            bool esPreguntaJuego = EsCasilleroPreguntaJuego(posActual);
+            EnviarPreguntaACliente(partida.ClientIdDelTurno, evento.Pregunta, esPreguntaJuego);
         }
+    }
+
+    private bool EsCasilleroPreguntaJuego(int indiceCasillero)
+    {
+        if (indiceCasillero < 0 || GameManager.Instancia == null || GameManager.Instancia.tableroManager == null)
+            return false;
+
+        var lista = GameManager.Instancia.tableroManager.ListaCasilleros;
+        if (lista == null) return false;
+
+        for (int i = 0; i < lista.Count; i++)
+        {
+            if (lista[i] != null && lista[i].Id == indiceCasillero)
+            {
+                return lista[i].Tipo == TipoCasillero.PreguntaJuego;
+            }
+        }
+
+        return false;
     }
 
     private string ConstruirEstadoPartida(PartidaServidor partida, EventoPartidaServidor evento)
@@ -462,7 +509,7 @@ public class NetworkLobbyServer : NetworkBehaviour
         return estado.ToString();
     }
 
-    private void EnviarPreguntaACliente(ulong clientId, PreguntaVisible pregunta)
+    private void EnviarPreguntaACliente(ulong clientId, PreguntaVisible pregunta, bool esPreguntaJuego)
     {
         if (pregunta == null) return;
 
@@ -486,6 +533,7 @@ public class NetworkLobbyServer : NetworkBehaviour
             new FixedString128Bytes(op1),
             new FixedString128Bytes(op2),
             new FixedString128Bytes(op3),
+            esPreguntaJuego,
             parametrosCliente
         );
     }
@@ -528,6 +576,7 @@ public class NetworkLobbyServer : NetworkBehaviour
         FixedString128Bytes opcion1,
         FixedString128Bytes opcion2,
         FixedString128Bytes opcion3,
+        bool esPreguntaJuego,
         ClientRpcParams parametrosRpc = default
     )
     {
@@ -539,7 +588,8 @@ public class NetworkLobbyServer : NetworkBehaviour
                 opcion1.ToString(),
                 opcion2.ToString(),
                 opcion3.ToString()
-            }
+            },
+            esPreguntaJuego
         );
     }
 

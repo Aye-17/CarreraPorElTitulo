@@ -138,18 +138,29 @@ public class GameManager : MonoBehaviour
             }
         }
 
-        // 2. Animar dado 3D si hubo tirada en este evento
-        if (valorDado > 0 && dadoVisual != null && indiceJugadorTurno < fichasVisuales3D.Length)
+        // 2. Enfocar cámara primero en la ficha objetivo
+        jugadorActual = indiceJugadorTurno;
+        Transform fichaObjetivo = null;
+
+        if (indiceJugadorTurno >= 0 && indiceJugadorTurno < fichasVisuales3D.Length && fichasVisuales3D[indiceJugadorTurno] != null)
         {
-            dadoVisual.Lanzar(valorDado, fichasVisuales3D[indiceJugadorTurno].transform, null);
+            fichaObjetivo = fichasVisuales3D[indiceJugadorTurno].transform;
+
+            if (camaraPrincipalScript != null)
+            {
+                camaraPrincipalScript.SeguirJugador(fichaObjetivo);
+            }
         }
 
-        // 3. ENFOCAR CÁMARA DE FORMA CONTINUA EN EL JUGADOR DEL TURNO
-        jugadorActual = indiceJugadorTurno;
-        if (camaraPrincipalScript != null && indiceJugadorTurno >= 0 && indiceJugadorTurno < fichasVisuales3D.Length && fichasVisuales3D[indiceJugadorTurno] != null)
+        // 3. Forzar activación del dado 3D y lanzarlo si hubo tirada en este evento
+        if (valorDado > 0 && dadoVisual != null && fichaObjetivo != null)
         {
-            Transform fichaObjetivo = fichasVisuales3D[indiceJugadorTurno].transform;
-            camaraPrincipalScript.SeguirJugador(fichaObjetivo);
+            if (!dadoVisual.gameObject.activeSelf)
+            {
+                dadoVisual.gameObject.SetActive(true);
+            }
+
+            dadoVisual.Lanzar(valorDado, fichaObjetivo, null);
         }
     }
 
@@ -526,7 +537,6 @@ public class GameManager : MonoBehaviour
             ResultadoVuelta resultado = gestorVueltas.ResolverLlegadaMeta(jugador);
 
             if (resultado == ResultadoVuelta.NecesitaPreguntas)
-            //[cite: 10]
             {
                 SiguienteTurno();
                 return;
